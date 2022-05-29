@@ -34,8 +34,7 @@ def preProcessor(img):
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(
-        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! '
-        'videoconvert '
+        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=1920,height=1080,framerate=60/1 ! videoconvert '
         '! appsink',
         cv2.CAP_GSTREAMER)
     # img = cv2.imread(".\Lib\doc_test.jpg")

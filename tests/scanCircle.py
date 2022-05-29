@@ -3,7 +3,7 @@ import cv2
 import time
 
 cap = cv2.VideoCapture(
-    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! videoconvert '
+    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=120/1 ! videoconvert '
     '! appsink',
     cv2.CAP_GSTREAMER)
 count = 0
