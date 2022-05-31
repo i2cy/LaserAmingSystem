@@ -34,7 +34,7 @@ threading.Thread(target=cap_thread, args=(cap,)).start()
 
 while True:
     # print("--------------------------------------")
-    time.sleep(0.01)
+    # time.sleep(0.01)
     frame = frame_buffer  # 一帧一帧捕捉
     # blur = cv2.bilateralFilter(frame, 9, 75, 75)
     # t1 = time.time()
