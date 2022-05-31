@@ -31,13 +31,13 @@ while True:
         continue
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
     cnt = contours[0]
-    # cv2.drawContours(frame, contours, 0, (0,255,0), 3)
+    cv2.drawContours(frame, contours, 0, (0, 255, 0), 3)
     # print(cv2.contourArea(cnt))
     x, y, w, h = cv2.boundingRect(cnt)
     if 100 < w * h < 600:  # &(w*h<600):
 
-        # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
         print([x + w // 2, y + h // 2])
     print("search time: {:.2f}ms".format((time.time() - t1) * 1000))
 
