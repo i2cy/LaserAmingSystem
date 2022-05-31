@@ -7,7 +7,7 @@ def preProcessor(img):
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
     edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
-    cv2.imshow("mask",edged)
+    cv2.imshow("mask", edged)
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
 
     paperCnt = None
@@ -16,19 +16,18 @@ def preProcessor(img):
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
         for c in contours:
             # 近似轮廓
-            if cv2.contourArea(c) > 500 :
-                cv2.drawContours(img,c,-1,(255,0,0),2)
+            if cv2.contourArea(c) > 500:
+                cv2.drawContours(img, c, -1, (255, 0, 0), 2)
                 peri = cv2.arcLength(c, True)
                 approx = cv2.approxPolyDP(c, 0.1 * peri, True)
-                if (len(approx) == 4)&(not cv2.isContourConvex(c)):
-                    cv2.drawContours(img,c,-1,(0,255,0),2)
-                    #x,y,w,h = cv2.minAreaRect(c)
-                    #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+                if (len(approx) == 4) & (not cv2.isContourConvex(c)):
+                    cv2.drawContours(img, c, -1, (0, 255, 0), 2)
+                    # x,y,w,h = cv2.minAreaRect(c)
+                    # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                     rect = cv2.minAreaRect(c)
                     box = cv2.boxPoints(rect)
                     box = np.int0(box)
-                    cv2.drawContours(img,[box],0,(0,0,255),2)
-
+                    cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
                     paperCnt = approx
                     break
@@ -37,14 +36,17 @@ def preProcessor(img):
     # return [i[0] for i in paperCnt]
 
 
-
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(1)
-    # img = cv2.imread(".\Lib\doc_test.jpg")
-    while(1):
+    # i2cy edit
+    from cam_config import CAM
 
-        flag,frame = cap.read()
+    cap = CAM
+    # end edit
+    # img = cv2.imread(".\Lib\doc_test.jpg")
+    while 1:
+
+        flag, frame = cap.read()
         preProcessor(frame)
-        cv2.imshow("res",frame)
+        cv2.imshow("res", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
