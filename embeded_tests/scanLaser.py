@@ -5,26 +5,41 @@ import cv2
 # from matplotlib import pyplot as plt
 
 # i2cy edit
+import threading
 from cam_config import CAM
 
 cap = CAM
-# end edit  # VideoCapture对象它的参数可以是设备索引或者一个视频文件名
+frame_buffer = None
+
+
+# end edit
+
+
+# VideoCapture对象它的参数可以是设备索引或者一个视频文件名
+
+def cap_thread(cam):
+    global frame_buffer
+    assert isinstance(cam, cv2.VideoCapture)
+    t10 = time.time()
+    while cam.isOpened():
+        flag, frame_buffer = cam.read()
+        print("\rCAM FPS: {:.2f}  ".format(1 / (time.time() - t10)), end="")
+        t10 = time.time()
+
 
 cnt = 0
 t0 = time.time()
 while True:
-    print("--------------------------------------")
-    t1 = time.time()
+    # print("--------------------------------------")
     ret, frame = cap.read()  # 一帧一帧捕捉
-    print("camera IO time: {:.2f}ms".format((time.time() - t1) * 1000))
     # blur = cv2.bilateralFilter(frame, 9, 75, 75)
-    t1 = time.time()
+    # t1 = time.time()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 我们对帧的操作
-    print("color conversion time: {:.2f}ms".format((time.time() - t1) * 1000))
-    t1 = time.time()
+    # print("color conversion time: {:.2f}ms".format((time.time() - t1) * 1000))
+    # t1 = time.time()
     ret, mask = cv2.threshold(gray, 210, 255, cv2.THRESH_BINARY)
-    print("binary time: {:.2f}ms".format((time.time() - t1) * 1000))
-    t1 = time.time()
+    # print("binary time: {:.2f}ms".format((time.time() - t1) * 1000))
+    # t1 = time.time()
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
     # cv2.imshow("mask",mask)
     if len(contours) is 0:
@@ -38,10 +53,10 @@ while True:
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
         cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
-        print([x + w // 2, y + h // 2])
-    print("search time: {:.2f}ms".format((time.time() - t1) * 1000))
+        # print([x + w // 2, y + h // 2])
+    # print("search time: {:.2f}ms".format((time.time() - t1) * 1000))
 
-    print("FPS: {:.2f}".format(1 / (time.time() - t0)))
+    # print("FPS: {:.2f}".format(1 / (time.time() - t0)))
 
     t0 = time.time()
 
