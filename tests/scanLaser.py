@@ -4,10 +4,11 @@ import cv2
 
 # from matplotlib import pyplot as plt
 
-cap = cv2.VideoCapture(
-    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=320,height=240,framerate=120/1 ! videoconvert '
-    '! appsink',
-    cv2.CAP_GSTREAMER)  # VideoCapture对象它的参数可以是设备索引或者一个视频文件名
+# i2cy edit
+from cam_config import CAM
+
+cap = CAM
+# end edit  # VideoCapture对象它的参数可以是设备索引或者一个视频文件名
 
 cnt = 0
 t0 = time.time()

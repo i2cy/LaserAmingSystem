@@ -30,10 +30,11 @@ def preProcessor(img):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(
-        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=120/1 ! videoconvert '
-        '! appsink',
-        cv2.CAP_GSTREAMER)
+    # i2cy edit
+    from cam_config import CAM
+
+    cap = CAM
+    # end edit
     # img = cv2.imread(".\Lib\doc_test.jpg")
     while (1):
 

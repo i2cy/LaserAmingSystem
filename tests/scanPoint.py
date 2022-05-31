@@ -1,10 +1,12 @@
 import numpy as np
 import cv2
 
-cap = cv2.VideoCapture(
-    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=120/1 ! videoconvert '
-    '! appsink',
-    cv2.CAP_GSTREAMER)
+# i2cy edit
+from cam_config import CAM
+
+cap = CAM
+# end edit
+
 while 1:
     flag, frame = cap.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

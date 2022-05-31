@@ -2,10 +2,11 @@ import cv2
 import numpy as np
 import time
 
-cap = cv2.VideoCapture(
-    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! videoconvert '
-    '! appsink',
-    cv2.CAP_GSTREAMER)
+# i2cy edit
+from cam_config import CAM
+
+cap = CAM
+# end edit
 
 # 帧640*480;亮度100/256
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
