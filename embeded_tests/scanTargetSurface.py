@@ -4,9 +4,11 @@ import numpy as np
 
 def preProcessor(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 灰度
+
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
     # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+
     cv2.imshow("mask", edged)
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
 
