@@ -7,4 +7,4 @@
 
 import cv2
 
-CAM = cv2.VideoCapture(1)
+CAM = cv2.VideoCapture(2)

@@ -6,7 +6,8 @@ def preProcessor(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 灰度
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
-    edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+    # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+    cv2.imshow("edged", edged)
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
     centers = []
     paperCnt = None
@@ -17,14 +18,17 @@ def preProcessor(img):
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 100:
-                x, y, w, h = cv2.boundingRect(cnt)
+
+            if 300 > area > 50:
+                pos, size, ang = cv2.fitEllipse(cnt)
+                # x, y, w, h = cv2.boundingRect(cnt)        # rect boud method_1
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                 # print(area/(w*h))
-                if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆
-                    cv2.circle(img, (x + w // 2, y + h // 2), 2, (0, 0, 255), 3)
-                    centers.append([x + w // 2, w + h // 2])
+                # if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆 method_1
+                if (0.875 * size[0] * size[1]) > area > (0.65 * size[0] * size[1]):
+                    cv2.circle(img, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
+                    centers.append(pos)
 
     return centers
     # cv2.polylines(img, [paperCnt], True, (0, 255, 0), 3)
@@ -40,7 +44,7 @@ if __name__ == "__main__":
 
     # end edit
     # img = cv2.imread(".\Lib\doc_test.jpg")
-    while (1):
+    while 1:
         flag, frame = cap.read()
         print(preProcessor(frame))
         cv2.imshow("res", frame)
