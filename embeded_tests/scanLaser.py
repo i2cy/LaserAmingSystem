@@ -29,9 +29,12 @@ def cap_thread(cam):
 
 cnt = 0
 t0 = time.time()
+threading.Thread(target=cap_thread, args=(cap,)).start()
+
 while True:
     # print("--------------------------------------")
-    ret, frame = cap.read()  # 一帧一帧捕捉
+    time.sleep(0.01)
+    frame = frame_buffer  # 一帧一帧捕捉
     # blur = cv2.bilateralFilter(frame, 9, 75, 75)
     # t1 = time.time()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 我们对帧的操作
