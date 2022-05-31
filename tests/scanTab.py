@@ -17,12 +17,12 @@ def preProcessor(img):
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 300:
+            if area > 100:
                 x, y, w, h = cv2.boundingRect(cnt)
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                 # print(area/(w*h))
-                if (0.7 * w * h <= area) & (0.83 * w * h >= area):  # 判定是否为圆
+                if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆
                     cv2.circle(img, (x + w // 2, y + h // 2), 2, (0, 0, 255), 3)
                     centers.append([x + w // 2, w + h // 2])
 
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     from cam_config import CAM
 
     cap = CAM
+
     # end edit
     # img = cv2.imread(".\Lib\doc_test.jpg")
     while (1):
