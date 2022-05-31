@@ -9,6 +9,7 @@ import threading
 from cam_config import CAM
 
 cap = CAM
+cap.set(cv2.CAP_PROP_FPS, 120)
 frame_buffer = None
 
 
