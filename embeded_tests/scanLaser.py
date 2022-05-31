@@ -45,8 +45,8 @@ while True:
 
     t0 = time.time()
 
-    # cv2.imshow('frame', frame)  # 显示返回的每帧
-    # if cv2.waitKey(1) & 0xFF == ord('q'):
-    #    break
+    cv2.imshow('frame', frame)  # 显示返回的每帧
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 cap.release()  # 当所有事完成，释放 VideoCapture 对象
 cv2.destroyAllWindows()
