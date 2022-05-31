@@ -6,7 +6,7 @@ def preProcessor(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 灰度
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
-    edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+    # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
     cv2.imshow("edged", edged)
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
     centers = []
@@ -18,7 +18,7 @@ def preProcessor(img):
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 100:
+            if 500 > area > 40:
                 x, y, w, h = cv2.boundingRect(cnt)
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
