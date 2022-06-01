@@ -4,7 +4,7 @@
 # Project: I2cyLib
 # Filename: htsocket
 # Created on: 2022/5/31
-
+import threading
 import time
 import numpy as np
 from i2cylib.serial import HTSocket
@@ -20,10 +20,52 @@ CENTER = (1200, 5250)
 
 class PTControl(HTSocket):
 
-    def __init__(self, port, baud_rate):
+    def __init__(self, port, baud_rate, ctl_freq=50):
         super(PTControl, self).__init__(port, baud_rate)
         self.pitch = 0
         self.yaw = 0
+        self.speed_pitch = 0
+        self.speed_yaw = 0
+        self.__delay_perstep = 1 / ctl_freq
+        self.flag_core_running = False
+        self.live = False
+        self.core_time = 0
+
+    def __core(self):
+        self.flag_core_running = True
+        while self.live:
+            try:
+                t0 = time.time()
+
+                if self.speed_pitch:
+
+
+                payload = int(self.pitch).to_bytes(2, 'big', signed=False)
+                payload += int(self.yaw).to_bytes(2, 'big', signed=False)
+                self.send(b"\xcc\x11", payload)
+                delay = self.__delay_perstep - time.time() + t0
+                if delay > 0:
+                    time.sleep(delay)
+                self.core_time = time.time() - t0
+            except:
+                continue
+
+        self.flag_core_running = False
+
+    def connect(self, port=None, baudrate=None, timeout=None):
+        super(PTControl, self).connect(port=port, baudrate=baudrate, timeout=timeout)
+        self.live = True
+        if not self.flag_core_running:
+            threading.Thread(target=self.__core).start()
+
+    def close(self):
+        self.live = False
+        while self.flag_core_running:
+            time.sleep(0.001)
+        super(PTControl, self).close()
+
+    def debug(self):
+        return {"core_freq": 1 / self.core_time}
 
     def move_to(self, pitch, yaw):
         self.pitch = pitch
@@ -36,9 +78,7 @@ class PTControl(HTSocket):
 
 def move(clt, pitch, yaw):
     assert isinstance(clt, HTSocket)
-    payload = int(pitch).to_bytes(2, 'big', signed=False)
-    payload += int(yaw).to_bytes(2, 'big', signed=False)
-    clt.send(b"\xcc\x11", payload)
+
 
 
 def test():
