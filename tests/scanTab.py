@@ -23,7 +23,6 @@ def preProcessor(img):
             if 300 > area > 50:
                 pos, size, ang = cv2.fitEllipse(cnt)
                 # x, y, w, h = cv2.boundingRect(cnt)        # rect boud method_1
-
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                 # print(area/(w*h))
