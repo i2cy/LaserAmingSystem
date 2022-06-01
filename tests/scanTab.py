@@ -7,11 +7,7 @@ def preProcessor(img):
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
     # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
-<<<<<<< Updated upstream
-    cv2.imshow("edged", edged)
-=======
     cv2.imshow("edge", edged)
->>>>>>> Stashed changes
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
     centers = []
     paperCnt = None
@@ -23,15 +19,11 @@ def preProcessor(img):
         for cnt in contours:
             cv2.drawContours(img, cnt, -1, (0,255,0),2)
             area = cv2.contourArea(cnt)
-<<<<<<< Updated upstream
 
             if 300 > area > 50:
                 pos, size, ang = cv2.fitEllipse(cnt)
                 # x, y, w, h = cv2.boundingRect(cnt)        # rect boud method_1
-=======
-            if 1000 > area > 150:
-                x, y, w, h = cv2.boundingRect(cnt)
->>>>>>> Stashed changes
+
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                 # print(area/(w*h))
