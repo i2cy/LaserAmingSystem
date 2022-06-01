@@ -1,8 +1,4 @@
-from tkinter.messagebox import NO
-from bitarray import test
 import cv2
-import numpy as np
-from time import sleep
 
 
 class Scanner:
@@ -116,7 +112,10 @@ class Scanner:
 
 if __name__ == "__main__":
 
-    test1 = Scanner(0)
+    test1 = Scanner(
+        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! videoconvert '
+        '! appsink',
+        cv2.CAP_GSTREAMER)
     test1.readFrame()
     a = test1.scanTargetSurface()
     print(a)
