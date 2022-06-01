@@ -6,7 +6,7 @@ def preProcessor(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 灰度
     blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
     edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
-    edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+    #edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
     cv2.imshow("mask",edged)
     contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
 
@@ -16,7 +16,7 @@ def preProcessor(img):
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
         for c in contours:
             # 近似轮廓
-            if cv2.contourArea(c) > 500 :
+            if cv2.contourArea(c) > 5000 :
                 cv2.drawContours(img,c,-1,(255,0,0),2)
                 peri = cv2.arcLength(c, True)
                 approx = cv2.approxPolyDP(c, 0.1 * peri, True)
