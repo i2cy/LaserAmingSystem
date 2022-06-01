@@ -1,5 +1,7 @@
 opencv-python
 numpy
 pyserial
-i2cylib >= 1.9.0
+i2cylib
 matplotlib
+tensorflow-gpu
+psutil
