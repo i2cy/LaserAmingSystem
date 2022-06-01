@@ -13,7 +13,7 @@ from i2cylib.utils.logger.logger import *
 COM = "/dev/ttyS4"
 BAUD_RATE = 115200
 
-CENTER = (1200, 5250)
+CENTER = (1070, 5150)
 
 
 class PTControl(HTSocket):
@@ -34,9 +34,6 @@ class PTControl(HTSocket):
         self.flag_core_running = False
         self.live = False
         self.core_time = 0
-
-    def __del__(self):
-        self.close()
 
     def __core(self):
         self.flag_core_running = True
