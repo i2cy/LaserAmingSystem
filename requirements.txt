@@ -1,5 +1,5 @@
 opencv-python
 numpy
 pyserial
-i2cylib
+i2cylib >= 1.9.0
 matplotlib
