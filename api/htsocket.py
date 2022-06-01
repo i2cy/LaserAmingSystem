@@ -10,23 +10,27 @@ import numpy as np
 from i2cylib.serial import HTSocket
 from i2cylib.utils.logger.logger import *
 
-
 COM = "/dev/ttyS4"
 BAUD_RATE = 115200
-
 
 CENTER = (1200, 5250)
 
 
 class PTControl(HTSocket):
 
-    def __init__(self, port, baud_rate, ctl_freq=50):
+    def __init__(self, port, baud_rate, ctl_freq=50, speed_dead_zone=(-20, 20),
+                 pitch_range=(0, 2400), yaw_range=(3250, 7250)):
         super(PTControl, self).__init__(port, baud_rate)
+        self.__delay_perstep = 1 / ctl_freq
+        self.dead_zone = speed_dead_zone
+        self.pitch_range = pitch_range
+        self.yaw_range = yaw_range
+
         self.pitch = 0
         self.yaw = 0
         self.speed_pitch = 0
         self.speed_yaw = 0
-        self.__delay_perstep = 1 / ctl_freq
+
         self.flag_core_running = False
         self.live = False
         self.core_time = 0
@@ -37,8 +41,21 @@ class PTControl(HTSocket):
             try:
                 t0 = time.time()
 
-                if self.speed_pitch:
+                if self.speed_pitch < self.dead_zone[0] or self.speed_pitch > self.dead_zone[1]:
+                    self.pitch += self.speed_pitch * self.core_time
 
+                if self.speed_yaw < self.dead_zone[0] or self.speed_yaw > self.dead_zone[1]:
+                    self.yaw += self.speed_yaw * self.core_time
+
+                if self.pitch < self.pitch_range[0]:
+                    self.pitch = self.pitch_range[0]
+                elif self.pitch > self.pitch_range[1]:
+                    self.pitch = self.pitch_range[1]
+
+                if self.yaw < self.yaw_range[0]:
+                    self.yaw = self.yaw_range[0]
+                elif self.yaw > self.yaw_range[1]:
+                    self.yaw = self.yaw_range[1]
 
                 payload = int(self.pitch).to_bytes(2, 'big', signed=False)
                 payload += int(self.yaw).to_bytes(2, 'big', signed=False)
@@ -67,23 +84,23 @@ class PTControl(HTSocket):
     def debug(self):
         return {"core_freq": 1 / self.core_time}
 
-    def move_to(self, pitch, yaw):
+    def move_to(self, pitch=1200, yaw=5250):
         self.pitch = pitch
         self.yaw = yaw
 
     def move(self, speed_pitch, speed_yaw):
-
-
+        self.speed_pitch = speed_pitch
+        self.speed_yaw = speed_yaw
 
 
 def move(clt, pitch, yaw):
-    assert isinstance(clt, HTSocket)
-
+    assert isinstance(clt, PTControl)
+    clt.move_to(pitch, yaw)
 
 
 def test():
     DELAY = 0.01
-    clt = HTSocket(COM, BAUD_RATE)
+    clt = PTControl(COM, BAUD_RATE)
     clt.connect()
     move(clt, *CENTER)
     time.sleep(1)
@@ -117,7 +134,7 @@ def test():
 
     for i2 in range(0, 3):
         for i, xi in enumerate(xc):
-            move(clt, CENTER[0] + int(xi*R), CENTER[1] + int(yc[i]*R))
+            move(clt, CENTER[0] + int(xi * R), CENTER[1] + int(yc[i] * R))
             time.sleep(DELAY)
         time.sleep(0.5)
         move(clt, *CENTER)
