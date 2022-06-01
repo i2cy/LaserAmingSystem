@@ -27,7 +27,7 @@ class Scanner:
         if self.roi is None:
             return "Please run {0} "
         flag,frame = self.cap.read()
-        self.frame = frame[self.roi[0]:self.roi[2],self.roi[1]:self.roi[3]]
+        self.frame = frame[(self.roi[0]-20):(self.roi[2]+20),self.roi[1]:self.roi[3]]
 
 
     def scanTargetSurface(self,area_H = 1000000000,area_L = 5000):
@@ -95,7 +95,7 @@ class Scanner:
         return centers
 
 
-    def scanLaser(self, area_L = 100, area_H = 300, thresh = 230):
+    def scanLaser(self, area_L = 100, area_H = 1000, thresh = 240):
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         flag, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)           #阈值化处理
@@ -109,7 +109,9 @@ class Scanner:
         # cv2.drawContours(frame, contours, 0, (0,255,0), 3)
         # print(cv2.contourArea(cnt))
         x, y, w, h = cv2.boundingRect(cnt)
-        if area_L < w * h < area_H:  # &(w*h<600):
+        cv2.imshow("frame",self.frame)
+        cv2.waitKey(1)
+        if area_L < w * h < area_H:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center = [x + w // 2, y + h // 2]
