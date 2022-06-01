@@ -17,7 +17,21 @@ BAUD_RATE = 115200
 
 CENTER = (1200, 5250)
 
-DELAY = 0.01
+
+class PTControl(HTSocket):
+
+    def __init__(self, port, baud_rate):
+        super(PTControl, self).__init__(port, baud_rate)
+        self.pitch = 0
+        self.yaw = 0
+
+    def move_to(self, pitch, yaw):
+        self.pitch = pitch
+        self.yaw = yaw
+
+    def move(self, speed_pitch, speed_yaw):
+
+
 
 
 def move(clt, pitch, yaw):
@@ -28,13 +42,14 @@ def move(clt, pitch, yaw):
 
 
 def test():
+    DELAY = 0.01
     clt = HTSocket(COM, BAUD_RATE)
     clt.connect()
     move(clt, *CENTER)
     time.sleep(1)
 
     p0 = (1040, 5520)
-    p1 = (1380, 4950)
+    p1 = (1360, 4950)
 
     move(clt, *p0)
     time.sleep(1)
@@ -48,7 +63,7 @@ def test():
     yc = np.linspace(0, 2 * np.pi, 300)
 
     xc = np.sin(xc)
-    yc = np.cos(xc)
+    yc = np.cos(yc)
 
     R = 400
 
