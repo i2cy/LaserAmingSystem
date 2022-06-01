@@ -7,7 +7,12 @@
 
 import cv2
 
-CAM = cv2.VideoCapture(
-    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! videoconvert '
-    '! appsink',
-    cv2.CAP_GSTREAMER)
+#CAM = cv2.VideoCapture(
+#    'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! videoconvert '
+#    '! appsink',
+#    cv2.CAP_GSTREAMER)
+
+CAM = cv2.VideoCapture(0)
+
+CAM.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+CAM.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
