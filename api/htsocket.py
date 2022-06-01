@@ -19,7 +19,7 @@ CENTER = (1200, 5250)
 class PTControl(HTSocket):
 
     def __init__(self, port, baud_rate, ctl_freq=50, speed_dead_zone=(-20, 20),
-                 pitch_range=(0, 2400), yaw_range=(3250, 7250)):
+                 pitch_range=(0, 2400), yaw_range=(3750, 6750)):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
         self.dead_zone = speed_dead_zone
@@ -34,6 +34,9 @@ class PTControl(HTSocket):
         self.flag_core_running = False
         self.live = False
         self.core_time = 0
+
+    def __del__(self):
+        self.close()
 
     def __core(self):
         self.flag_core_running = True
@@ -88,7 +91,7 @@ class PTControl(HTSocket):
         self.pitch = pitch
         self.yaw = yaw
 
-    def move(self, speed_pitch, speed_yaw):
+    def move(self, speed_pitch=0, speed_yaw=0):
         self.speed_pitch = speed_pitch
         self.speed_yaw = speed_yaw
 
@@ -142,6 +145,8 @@ def test():
 
     time.sleep(1)
     move(clt, *CENTER)
+
+    clt.close()
 
 
 if __name__ == '__main__':

@@ -3,9 +3,9 @@ import cv2
 
 class Scanner:
 
-    def __init__(self, CAMx):
+    def __init__(self, *camera_args):
 
-        self.cap = cv2.VideoCapture(*CAMx)
+        self.cap = cv2.VideoCapture(*camera_args)
         for i in range(30):
             self.cap.read()
         flag, frame = self.cap.read()
@@ -113,17 +113,23 @@ class Scanner:
 if __name__ == "__main__":
 
     test1 = Scanner(
-        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! videoconvert '
+        'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! '
+        'videoconvert '
         '! appsink',
         cv2.CAP_GSTREAMER)
+
     test1.readFrame()
     a = test1.scanTargetSurface()
     print(a)
+
     test1.readROI()
     b = test1.scanTags()
     print(b)
-    while (1):
-        test1.readROI()
-        c = test1.scanLaser()
-        print(c)
-    cv2.destroyAllWindows()
+
+    try:
+        while 1:
+            test1.readROI()
+            c = test1.scanLaser()
+            print(c)
+    except KeyboardInterrupt:
+        cv2.destroyAllWindows()
