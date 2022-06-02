@@ -132,7 +132,10 @@ if __name__ == "__main__":
     #     '! appsink',
     #     cv2.CAP_GSTREAMER)
 
-    test1 = Scanner(2)
+    test1 = Scanner(0)
+
+    test1.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    test1.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
     test1.readFrame()
     a = test1.scanTargetSurface()
