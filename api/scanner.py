@@ -51,12 +51,16 @@ class Scanner:
                         # x,y,w,h = cv2.minAreaRect(c)
                         x,y,w,h = cv2.boundingRect(c)
                         count = 0
-                        for i in 50:
-                            specimen_point = (x+(w//50)*i, y + 0.5*h)
-                            if bina[specimen_point[0],specimen_point[1]] == 255:
+                        for i in range(50):
+                            specimen_point = (x+(w//50)*i, y + h//2)
+                            print(specimen_point[0],specimen_point[1])
+
+                            if bina[specimen_point[0],specimen_point[1],0] == 255:
                                 count += 1
-                        if count < 45:          #是否识别到靶面
+                        print("count = ",count)
+                        if count < 30:          #是否识别到靶面
                             continue
+                        
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                         # rect = cv2.minAreaRect(c)
                         # box = cv2.boxPoints(rect)
@@ -96,8 +100,8 @@ class Scanner:
 
     def scanLaser(self, area_L=100, area_H=1000, thresh=240):
 
-        # gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        frame_blue, frame_green ,gray = cv2.split(self.frame)
+        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # frame_blue, frame_green ,gray = cv2.split(self.frame)
         #期望:由b,g创建掩膜,于r通道按位与,得到光点掩膜
         #程序待完成
         flag, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)  # 阈值化处理
@@ -111,8 +115,8 @@ class Scanner:
         # cv2.drawContours(frame, contours, 0, (0,255,0), 3)
         # print(cv2.contourArea(cnt))
         x, y, w, h = cv2.boundingRect(cnt)
-        cv2.imshow("frame", self.frame)
-        cv2.waitKey(1)
+        # cv2.imshow("frame", self.frame)
+        # cv2.waitKey(1)
         if area_L < w * h < area_H:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
