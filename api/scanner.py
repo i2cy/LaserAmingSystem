@@ -25,7 +25,7 @@ class Scanner:
         self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
 
-    def scanTargetSurface(self, thresh = 100, area_H=1000000000, area_L=5000):
+    def scanTargetSurface(self, thresh=100, area_H=1000000000, area_L=5000):
         """
             para : thresh, area_H, srea_L
             return : a list contains 4 points
@@ -55,14 +55,14 @@ class Scanner:
                         x, y, w, h = cv2.boundingRect(c)
                         count = 0
                         for i in range(50):
-                            specimen_point = (x+(w//50)*i, y + h//2)
-                            print(specimen_point[0],specimen_point[1])
-                            if bina[specimen_point[0],specimen_point[1],0] == 255:
+                            specimen_point = (x + (w // 50) * i, y + h // 2)
+                            print(specimen_point[0], specimen_point[1])
+                            if bina[specimen_point[0], specimen_point[1], 0] == 255:
                                 count += 1
-                        print("count = ",count)
-                        if count < 30:          #是否识别到靶面
+                        print("count = ", count)
+                        if count < 30:  # 是否识别到靶面
                             continue
-                        
+
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                         # rect = cv2.minAreaRect(c)
                         # box = cv2.boxPoints(rect)
@@ -110,8 +110,8 @@ class Scanner:
         """
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)
-        #期望:由b,g创建掩膜,于r通道按位与,得到光点掩膜
-        #程序待完成
+        # 期望:由b,g创建掩膜,于r通道按位与,得到光点掩膜
+        # 程序待完成
         flag, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)  # 阈值化处理
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.imshow("mask", mask)
