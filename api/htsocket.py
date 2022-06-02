@@ -84,7 +84,7 @@ class PTControl(HTSocket):
     def debug(self):
         return {"core_freq": 1 / self.core_time}
 
-    def move_to(self, pitch=1200, yaw=5250):
+    def moveTo(self, pitch=1200, yaw=5250):
         self.pitch = pitch
         self.yaw = yaw
 
@@ -95,7 +95,7 @@ class PTControl(HTSocket):
 
 def move(clt, pitch, yaw):
     assert isinstance(clt, PTControl)
-    clt.move_to(pitch, yaw)
+    clt.moveTo(pitch, yaw)
 
 
 def test():
