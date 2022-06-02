@@ -24,12 +24,13 @@ class Scanner:
         self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
 
-    def scanTargetSurface(self, area_H=1000000000, area_L=5000):
+    def scanTargetSurface(self, thresh = 100, area_H=1000000000, area_L=5000):
         """
+            para : thresh, area_H, srea_L
             return : a list contains 4 points
         """
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
-        flag, bina = cv2.threshold(self.frame, 180, 255, cv2.THRESH_BINARY)
+        flag, bina = cv2.threshold(self.frame, thresh, 255, cv2.THRESH_BINARY)
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
@@ -72,6 +73,10 @@ class Scanner:
         return shapepoint
 
     def scanTags(self, area_H=300, area_L=50, shaperate_H=0.86, shaperate_L=0.65):
+        """
+            para : area_h, area_L, shaprate_H, shaperate_L
+            func : muilty scan tags
+        """
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
@@ -98,8 +103,10 @@ class Scanner:
                         centers.append(pos)
         return centers
 
-    def scanLaser(self, area_L=100, area_H=1000, thresh=240):
-
+    def scanLaser(self, area_L=1, area_H=40, thresh=210):
+        """
+            para : area_L, area_H, thresh
+        """
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)
         #期望:由b,g创建掩膜,于r通道按位与,得到光点掩膜
