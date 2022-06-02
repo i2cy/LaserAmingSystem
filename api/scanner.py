@@ -21,7 +21,8 @@ class Scanner:
         if self.roi is None:
             return "Please run {0} "
         flag, frame = self.cap.read()
-        self.frame = frame[(self.roi[0] - 20):(self.roi[2] + 20), self.roi[1]:self.roi[3]]
+        self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
+        # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
 
     def scanTargetSurface(self, area_H=1000000000, area_L=5000):
         """
@@ -54,7 +55,6 @@ class Scanner:
                         for i in range(50):
                             specimen_point = (x+(w//50)*i, y + h//2)
                             print(specimen_point[0],specimen_point[1])
-
                             if bina[specimen_point[0],specimen_point[1],0] == 255:
                                 count += 1
                         print("count = ",count)
@@ -133,9 +133,6 @@ if __name__ == "__main__":
     #     cv2.CAP_GSTREAMER)
 
     test1 = Scanner(0)
-
-    test1.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    test1.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
     test1.readFrame()
     a = test1.scanTargetSurface()
