@@ -49,7 +49,7 @@ class Scanner:
                     if (len(approx) == 4) & (not cv2.isContourConvex(c)):
                         # cv2.drawContours(self.frame, c, -1, (0, 255, 0), 2)
                         # x,y,w,h = cv2.minAreaRect(c)
-                        x,y,w,h = cv2.boundingRect(c)
+                        x, y, w, h = cv2.boundingRect(c)
                         count = 0
                         for i in range(50):
                             specimen_point = (x+(w//50)*i, y + h//2)
@@ -67,7 +67,7 @@ class Scanner:
                         # box = np.int0(box)
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
-                        self.roi = [x , y, x+w, y+h]
+                        self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     #     '! appsink',
     #     cv2.CAP_GSTREAMER)
 
-    test1 = Scanner(0)
+    test1 = Scanner(2)
 
     test1.readFrame()
     a = test1.scanTargetSurface()
