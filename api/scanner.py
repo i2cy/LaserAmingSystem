@@ -3,9 +3,10 @@ import cv2
 
 class Scanner:
 
-    def __init__(self, *camera_args):
+    def __init__(self, pipe):
 
-        self.cap = cv2.VideoCapture(*camera_args)
+        assert isinstance(pipe, cv2.VideoCapture)
+        self.cap = pipe
         for i in range(30):
             self.cap.read()
         flag, frame = self.cap.read()
@@ -139,10 +140,11 @@ if __name__ == "__main__":
     #     '! appsink',
     #     cv2.CAP_GSTREAMER)
 
-    test1 = Scanner(0)
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
-    test1.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    test1.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    test1 = Scanner(cap)
 
     test1.readFrame()
     a = test1.scanTargetSurface()
