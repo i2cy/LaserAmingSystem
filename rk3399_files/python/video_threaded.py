@@ -42,7 +42,7 @@ def main():
     try:
         fn = sys.argv[1]
     except:
-        fn = 0
+        fn = 2
     cap = video.create_capture(fn)
 
 
@@ -50,6 +50,7 @@ def main():
         # some intensive computation...
         frame = cv.medianBlur(frame, 19)
         frame = cv.medianBlur(frame, 19)
+
         return frame, t0
 
     threadn = cv.getNumberOfCPUs()

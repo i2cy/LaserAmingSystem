@@ -1,14 +1,87 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# Author: BoranLi(https://github.com/Spc2r)
+# Contributor: I2cy(i2cy@outlook.com)
+
+import threading
+import time
 import cv2
+import ctypes
+from multiprocessing import Process, Value, Queue
+
+
+class CameraPipe:
+
+    def __init__(self, video_capture_args, frame_size):
+        self.__video_args = video_capture_args
+        self.frame_size = frame_size
+        self.__queue_frame = Queue(128)
+        self.__live = Value(ctypes.c_bool, False)
+        self.__frame_time = 0
+        self.__frame_buff = None
+
+        self.__threads_processes = ()
+
+    def _captureProc(self):
+        t0 = time.time()
+        cap = cv2.VideoCapture(*self.__video_args)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
+        while self.__live.value:
+            try:
+                frame_time = time.time() - t0
+                t0 = time.time()
+                flag, frame = cap.read()
+                if flag:
+                    self.__queue_frame.put((frame, frame_time))
+            except:
+                continue
+
+    def __core(self):
+        while self.__live.value:
+            try:
+                self.__frame_buff, self.__frame_time = self.__queue_frame.get(timeout=0.5)
+            except:
+                continue
+
+    def read(self):
+        return self.__frame_buff is None, self.__frame_buff
+
+    def getFrame(self):
+        return self.__frame_buff
+
+    def getFPS(self):
+        if not self.__frame_time:
+            fr = 0
+        else:
+            fr = 1 / self.__frame_time
+        return fr
+
+    def start(self):
+        if self.__live.value:
+            return
+        self.__live.value = True
+        p = Process(target=self._captureProc)
+        p.start()
+        thr = threading.Thread(target=self.__core)
+        thr.start()
+
+        self.__threads_processes = (p, thr)
+
+    def stop(self):
+        if not self.__live.value:
+            return
+        self.__live.value = False
+        for ele in self.__threads_processes:
+            ele.join()
+        self.__threads_processes = ()
 
 
 class Scanner:
 
     def __init__(self, pipe):
-
-        assert isinstance(pipe, cv2.VideoCapture)
+        assert isinstance(pipe, CameraPipe)
         self.cap = pipe
-        for i in range(30):
-            self.cap.read()
         flag, frame = self.cap.read()
         self.frame = frame
         self.roi = None
@@ -21,6 +94,8 @@ class Scanner:
     def readROI(self):
         if self.roi is None:
             return "Please run {0} "
+        while self.frame is None:
+            self.readFrame()
         flag, frame = self.cap.read()
         self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
@@ -30,6 +105,9 @@ class Scanner:
             para : thresh, area_H, srea_L
             return : a list contains 4 points
         """
+        while self.frame is None:
+            self.readFrame()
+
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         flag, bina = cv2.threshold(self.frame, thresh, 255, cv2.THRESH_BINARY)
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
@@ -79,6 +157,9 @@ class Scanner:
             func : muilty scan tags
         """
 
+        while self.frame is None:
+            self.readFrame()
+
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
@@ -108,6 +189,10 @@ class Scanner:
         """
             para : area_L, area_H, thresh
         """
+
+        while self.frame is None:
+            self.readFrame()
+
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)
         # 期望:由b,g创建掩膜,于r通道按位与,得到光点掩膜
@@ -132,17 +217,33 @@ class Scanner:
             return center
 
 
-if __name__ == "__main__":
+def test_phase1():
 
-    # test1 = Scanner(
-    #     'rkisp device=/dev/video1 io-mode=4 ! video/x-raw,format=NV12,width=600,height=450,framerate=120/60 ! '
-    #     'videoconvert '
-    #     '! appsink',
-    #     cv2.CAP_GSTREAMER)
+    cam = CameraPipe((2,), (1280, 720))
 
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    cam.start()
+
+    try:
+        while True:
+            frame = cam.getFrame()
+            if frame is None:
+                continue
+
+            cv2.imshow("frame", frame)
+            print("FPS: {:.2f}".format(cam.getFPS()))
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    except KeyboardInterrupt:
+        pass
+
+    cv2.destroyAllWindows()
+
+    cam.stop()
+
+
+def test_phase2():
+    cap = CameraPipe((2,), (1280, 720))
+    cap.start()
 
     test1 = Scanner(cap)
 
@@ -161,3 +262,14 @@ if __name__ == "__main__":
             print(c)
     except KeyboardInterrupt:
         cv2.destroyAllWindows()
+
+    cap.stop()
+
+
+if __name__ == "__main__":
+
+    test_phase2()
+
+    #test_phase1()
+
+
