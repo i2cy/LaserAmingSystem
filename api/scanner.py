@@ -12,7 +12,7 @@ from multiprocessing import Process, Value, Queue
 
 class CameraPipe:
 
-    def __init__(self, video_capture_args, frame_size, frame_rate=60):
+    def __init__(self, video_capture_args, frame_size, frame_rate=None):
         self.__video_args = video_capture_args
         self.frame_size = frame_size
         self.frame_rate = frame_rate
@@ -28,7 +28,8 @@ class CameraPipe:
         cap = cv2.VideoCapture(*self.__video_args)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
-        cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
+        if self.frame_rate is not None:
+            cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
         while self.__live.value:
             try:
                 frame_time = time.time() - t0
@@ -75,7 +76,10 @@ class CameraPipe:
             return
         self.__live.value = False
         for ele in self.__threads_processes:
-            ele.join()
+            if isinstance(ele, Process):
+                ele.kill()
+            else:
+                ele.join()
         self.__threads_processes = ()
 
 
