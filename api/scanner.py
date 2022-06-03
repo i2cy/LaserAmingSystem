@@ -86,30 +86,53 @@ class CameraPipe:
 class Scanner:
 
     def __init__(self, pipe):
-        assert isinstance(pipe, CameraPipe)
+        """
+        advanced CV object specially designed for TI Cup
+
+        :param pipe: CameraPipe object or VideoCapture object
+        """
+        assert isinstance(pipe, CameraPipe) or isinstance(pipe, cv2.VideoCapture)
         self.cap = pipe
         flag, frame = self.cap.read()
         self.frame = frame
         self.roi = None
 
     def readFrame(self):
+        """
+        read one frame from pipeline
+
+        :return: np.ndarray
+        """
 
         flag, frame = self.cap.read()
         self.frame = frame
 
+        return self.frame
+
     def readROI(self):
+        """
+        get clipped ROI area from buffer
+
+        :return: np.ndarray
+        """
+
         if self.roi is None:
-            return "Please run {0} "
+            raise Exception("no ROI recorded yet, use scanTargetSurface method for detection")
         while self.frame is None:
             self.readFrame()
         flag, frame = self.cap.read()
         self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
+        return self.frame
 
-    def scanTargetSurface(self, thresh=100, area_H=1000000000, area_L=5000):
+    def scanTargetSurface(self, thresh=100, area_H=45000, area_L=4000):
         """
-            para : thresh, area_H, srea_L
-            return : a list contains 4 points
+        Target surface detector
+
+        :param thresh: int (0~255, default:100), brightness threshold for verification
+        :param area_H: int (>0, default:45000), maxim area for filter
+        :param area_L: int (>0, default:4000), minim area for filter
+        :return: List(4), a list of coordinates of each corner of the target
         """
         while self.frame is None:
             self.readFrame()
@@ -164,7 +187,7 @@ class Scanner:
         """
 
         while self.frame is None:
-            self.readFrame()
+            self.readROI()
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
@@ -193,11 +216,16 @@ class Scanner:
 
     def scanLaser(self, area_L=1, area_H=40, thresh=210):
         """
-            para : area_L, area_H, thresh
+        Laser beam coordinate detector
+
+        :param area_L: int (>0, default:1)
+        :param area_H: int (>0, default:40)
+        :param thresh: int (0~255, default:210), threshold of brightness for filter
+        :return:
         """
 
         while self.frame is None:
-            self.readFrame()
+            self.readROI()
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)
@@ -219,7 +247,7 @@ class Scanner:
         if area_L < w * h < area_H:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
-            center = [x + w // 2, y + h // 2]
+            center = [x + w / 2, y + h / 2]
             return center
 
 
