@@ -12,9 +12,10 @@ from multiprocessing import Process, Value, Queue
 
 class CameraPipe:
 
-    def __init__(self, video_capture_args, frame_size):
+    def __init__(self, video_capture_args, frame_size, frame_rate=60):
         self.__video_args = video_capture_args
         self.frame_size = frame_size
+        self.frame_rate = frame_rate
         self.__queue_frame = Queue(128)
         self.__live = Value(ctypes.c_bool, False)
         self.__frame_time = 0
@@ -27,6 +28,7 @@ class CameraPipe:
         cap = cv2.VideoCapture(*self.__video_args)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
+        cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
         while self.__live.value:
             try:
                 frame_time = time.time() - t0
@@ -219,7 +221,7 @@ class Scanner:
 
 def test_phase1():
 
-    cam = CameraPipe((2,), (1280, 720))
+    cam = CameraPipe((2,), (320, 240), 60)
 
     cam.start()
 
@@ -242,7 +244,7 @@ def test_phase1():
 
 
 def test_phase2():
-    cap = CameraPipe((2,), (1280, 720))
+    cap = CameraPipe((2,), (320, 240), 60)
     cap.start()
 
     test1 = Scanner(cap)
@@ -268,8 +270,8 @@ def test_phase2():
 
 if __name__ == "__main__":
 
-    test_phase2()
+    #test_phase2()
 
-    #test_phase1()
+    test_phase1()
 
 
