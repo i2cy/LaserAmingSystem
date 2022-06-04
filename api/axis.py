@@ -10,7 +10,7 @@ import numpy as np
 
 class Trans:
 
-    def __init__(self, cv_ROI):
+    def __init__(self, , ):
 
         assert len(cv_ROI) == 4
-        self.ROI = cv_ROI
+        self.ROI = cv_

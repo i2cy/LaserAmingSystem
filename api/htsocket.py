@@ -4,6 +4,7 @@
 # Project: I2cyLib
 # Filename: htsocket
 # Created on: 2022/5/31
+
 import threading
 import time
 import numpy as np

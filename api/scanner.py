@@ -96,6 +96,7 @@ class Scanner:
         flag, frame = self.cap.read()
         self.frame = frame
         self.roi = None
+        self.target_cords = None
 
     def readFrame(self):
         """
@@ -163,10 +164,10 @@ class Scanner:
                         count = 0
                         for i in range(50):
                             specimen_point = (x + (w // 50) * i, y + h // 2)
-                            print(specimen_point[0], specimen_point[1])
+                            # print(specimen_point[0], specimen_point[1])
                             if bina[specimen_point[0], specimen_point[1], 0] == 255:
                                 count += 1
-                        print("count = ", count)
+                        # print("count = ", count)
                         if count < 30:  # 是否识别到靶面
                             continue
 
@@ -250,6 +251,11 @@ class Scanner:
             center = [x + w / 2, y + h / 2]
             return center
 
+    def getAngle(self):
+        if self.target_cords is None:
+            return None
+        cords = []
+
 
 def test_phase1():
 
@@ -293,7 +299,7 @@ def test_phase2():
         while 1:
             test1.readROI()
             c = test1.scanLaser()
-            print(c)
+            print(c, " ", end="\r")
     except KeyboardInterrupt:
         cv2.destroyAllWindows()
 
@@ -302,8 +308,8 @@ def test_phase2():
 
 if __name__ == "__main__":
 
-    #test_phase2()
+    test_phase2()
 
-    test_phase1()
+    #test_phase1()
 
 
