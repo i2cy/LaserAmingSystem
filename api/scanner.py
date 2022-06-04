@@ -8,7 +8,9 @@ import time
 import cv2
 import ctypes
 from multiprocessing import Process, Value, Queue
-
+import numpy as np
+from torch import matrix_rank
+from math import degrees as dg
 
 class CameraPipe:
 
@@ -170,7 +172,6 @@ class Scanner:
                         # print("count = ", count)
                         if count < 30:  # 是否识别到靶面
                             continue
-
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                         # rect = cv2.minAreaRect(c)
                         # box = cv2.boxPoints(rect)
@@ -255,6 +256,31 @@ class Scanner:
         if self.target_cords is None:
             return None
         cords = []
+
+    def pnpSolve(self, matrix_img):
+
+        f=3.4
+        dx=0.01
+        dy=0.01
+        u0=320
+        v0=240
+        list1=[f/dx,0,u0,0,f/dy,v0,0,0,1]
+        mtx=np.mat(list1).reshape(3,3)
+        # dist=np.mat([0,0,0,0,0])
+        dist = None
+        # objp=np.zeros((10*10,3),np.float32)
+        # objp[:, :2]=np.mgrid[0:200:20, 0:200:20].T.reshape(-1,2)
+        matrix_obj = np.array([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.np.float32)
+        _,R,T=cv2.solvePnP(matrix_obj,matrix_img,mtx,dist)
+
+
+        sita_x = dg(R[0][0])
+        sita_y = dg(R[1][0])
+        sita_z = dg(R[2][0])
+        print("sita_x is  ", sita_x)
+        print("sita_y is  ", sita_y)
+        print("sita_z is  ", sita_z)
+
 
 
 def test_phase1():
