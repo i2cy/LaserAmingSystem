@@ -177,7 +177,7 @@ class Scanner:
                         # box = np.int0(box)
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
-                        self.matrix_img = approx
+                        self.matrix_img = np.squeeze(approx)
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
@@ -270,7 +270,7 @@ class Scanner:
         dist = None
         # objp=np.zeros((10*10,3),np.float32)
         # objp[:, :2]=np.mgrid[0:200:20, 0:200:20].T.reshape(-1,2)
-        matrix_obj = np.array([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.np.float32)
+        matrix_obj = np.array([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.float32)
         # _,R,T=cv2.solvePnP(matrix_obj,matrix_img,mtx,dist)
         _,R,T=cv2.solvePnP(matrix_obj,self.matrix_img,mtx,dist)
         sita_x = dg(R[0][0])
