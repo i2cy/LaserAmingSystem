@@ -11,6 +11,7 @@ from multiprocessing import Process, Value, Queue
 import numpy as np
 from math import degrees as dg
 
+
 class CameraPipe:
 
     def __init__(self, video_capture_args, frame_size, frame_rate=None):
@@ -177,7 +178,7 @@ class Scanner:
                         # box = np.int0(box)
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
-                        self.matrix_img = np.squeeze(approx)
+                        self.target_cords = np.squeeze(approx)
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
@@ -258,21 +259,23 @@ class Scanner:
         cords = []
 
     def pnpSolve(self):
+        if self.roi is None:
+            self.scanTargetSurface()
 
-        f=3.4
-        dx=0.01
-        dy=0.01
-        u0=320
-        v0=240
-        list1=[f/dx,0,u0,0,f/dy,v0,0,0,1]
-        mtx=np.mat(list1).reshape(3,3)
-        dist=np.mat([0,0,0,0,0])
+        f = 3.4
+        dx = 0.01
+        dy = 0.01
+        u0 = 320
+        v0 = 240
+        list1 = [f / dx, 0, u0, 0, f / dy, v0, 0, 0, 1]
+        mtx = np.mat(list1).reshape(3, 3)
+        dist = np.mat([0, 0, 0, 0, 0])
         # dist = None
         matrix_img = np.mat(self.target_cords, dtype=np.float32)
         # objp=np.zeros((10*10,3),np.float32)
         # objp[:, :2]=np.mgrid[0:200:20, 0:200:20].T.reshape(-1,2)
-        matrix_obj = np.mat([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.float32)
-        _,R,T=cv2.solvePnP(matrix_obj,matrix_img,mtx,dist)
+        matrix_obj = np.mat([[0, 0, 0], [50, 0, 0], [50, 50, 0], [0, 50, 0]], dtype=np.float32)
+        _, R, T = cv2.solvePnP(matrix_obj, matrix_img, mtx, dist)
         # _,R,T=cv2.solvePnP(matrix_obj,self.matrix_img,mtx,dist,flags=cv2.SOLVEPNP_P3P)
         # sita_x = dg(R[0][0])
         sita_y = dg(R[1][0])
@@ -284,9 +287,7 @@ class Scanner:
         return sita_y
 
 
-
 def test_phase1():
-
     cam = CameraPipe((2,), (320, 240), 60)
 
     cam.start()
@@ -317,7 +318,7 @@ def test_phase2():
 
     test1.readFrame()
     a = test1.scanTargetSurface()
-    print(test1.matrix_img.shape)
+    print(test1.target_cords.shape)
 
     test1.pnpSolve()
 
@@ -336,19 +337,17 @@ def test_phase2():
     cap.stop()
 
 
-
 if __name__ == "__main__":
-
     def test_PnPslv():
-        cap = CameraPipe((0,), (320, 240), 60)
+        cap = CameraPipe((2,), (320, 240), 60)
         cap.start()
         test0 = Scanner(cap)
-        test0.target_cords = np.array([[58,45],[ 59,124],[136,125],[136,45]],dtype=np.float32)
+        # test0.target_cords = np.array([[58, 45], [59, 124], [136, 125], [136, 45]], dtype=np.float32)
         test0.pnpSolve()
+
+
     test_PnPslv()
 
-    #test_phase2()
+    # test_phase2()
 
     # test_phase1()
-
-
