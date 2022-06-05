@@ -5,10 +5,12 @@
 
 import threading
 import time
+import signal
 import cv2
 import ctypes
 from multiprocessing import Process, Value, Queue
 import numpy as np
+import os
 from math import degrees as dg
 
 
@@ -24,6 +26,10 @@ class CameraPipe:
         self.__frame_buff = None
 
         self.__threads_processes = ()
+
+    def __del__(self):
+        if self.__live.value:
+            self.stop()
 
     def _captureProc(self):
         t0 = time.time()
@@ -79,7 +85,7 @@ class CameraPipe:
         self.__live.value = False
         for ele in self.__threads_processes:
             if isinstance(ele, Process):
-                ele.kill()
+                os.kill(ele.pid, signal.SIGKILL)
             else:
                 ele.join()
         self.__threads_processes = ()
@@ -137,9 +143,11 @@ class Scanner:
         :param area_L: int (>0, default:4000), minim area for filter
         :return: List(4), a list of coordinates of each corner of the target
         """
+        self.frame = None
         while self.frame is None:
             self.readFrame()
 
+        self.roi = None
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         flag, bina = cv2.threshold(self.frame, thresh, 255, cv2.THRESH_BINARY)
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
@@ -179,6 +187,20 @@ class Scanner:
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
                         self.target_cords = np.squeeze(approx)
+                        arr_t = self.target_cords.copy()
+                        arr_t2 = self.target_cords.copy()
+                        assert isinstance(arr_t, np.ndarray)
+                        arr_t -= int(arr_t.mean())
+                        for i, (x, y) in enumerate(arr_t):
+                            if x < 0 and y < 0:
+                                ind = 0
+                            elif x > 0 and y < 0:
+                                ind = 1
+                            elif x > 0 and y > 0:
+                                ind = 2
+                            else:
+                                ind = 3
+                            self.target_cords[ind] = arr_t2[i]
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
@@ -271,18 +293,19 @@ class Scanner:
         mtx = np.mat(list1).reshape(3, 3)
         dist = np.mat([0, 0, 0, 0, 0])
         # dist = None
+
         matrix_img = np.mat(self.target_cords, dtype=np.float32)
         # objp=np.zeros((10*10,3),np.float32)
         # objp[:, :2]=np.mgrid[0:200:20, 0:200:20].T.reshape(-1,2)
         matrix_obj = np.mat([[0, 0, 0], [50, 0, 0], [50, 50, 0], [0, 50, 0]], dtype=np.float32)
         _, R, T = cv2.solvePnP(matrix_obj, matrix_img, mtx, dist)
         # _,R,T=cv2.solvePnP(matrix_obj,self.matrix_img,mtx,dist,flags=cv2.SOLVEPNP_P3P)
-        # sita_x = dg(R[0][0])
+        sita_x = dg(R[0][0])
         sita_y = dg(R[1][0])
-        # sita_z = dg(R[2][0])
-        # print("sita_x is  ", sita_x)
+        sita_z = dg(R[2][0])
+        print("sita_x is  ", sita_x)
         print("y轴旋转角 is  ", sita_y)
-        # print("sita_z is  ", sita_z)
+        print("sita_z is  ", sita_z)
 
         return sita_y
 
@@ -343,7 +366,16 @@ if __name__ == "__main__":
         cap.start()
         test0 = Scanner(cap)
         # test0.target_cords = np.array([[58, 45], [59, 124], [136, 125], [136, 45]], dtype=np.float32)
-        test0.pnpSolve()
+        while True:
+            test0.scanTargetSurface()
+            test0.readROI()
+            test0.pnpSolve()
+
+            print(test0.frame.shape)
+            #if test0.frame.shape[0] > 0 and test0.frame.shape[1] > 0:
+            #    cv2.imshow("test", cv2.resize(test0.frame.copy(), (100, 100)))
+            #    cv2.waitKey(1)
+            time.sleep(1)
 
 
     test_PnPslv()
