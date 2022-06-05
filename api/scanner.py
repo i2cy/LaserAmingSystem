@@ -134,7 +134,7 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def scanTargetSurface(self, thresh=100, area_H=45000, area_L=4000):
+    def scanTargetSurface(self, thresh=15, area_H=45000, area_L=4000):
         """
         Target surface detector
 
@@ -191,12 +191,12 @@ class Scanner:
                         arr_t2 = self.target_cords.copy()
                         assert isinstance(arr_t, np.ndarray)
                         arr_t -= int(arr_t.mean())
-                        for i, (x, y) in enumerate(arr_t):
-                            if x < 0 and y < 0:
+                        for i, (x1, y1) in enumerate(arr_t):
+                            if x1 < 0 and y1 < 0:
                                 ind = 0
-                            elif x > 0 and y < 0:
+                            elif x1 > 0 and y1 < 0:
                                 ind = 1
-                            elif x > 0 and y > 0:
+                            elif x1 > 0 and y1 > 0:
                                 ind = 2
                             else:
                                 ind = 3
@@ -372,9 +372,9 @@ if __name__ == "__main__":
             test0.pnpSolve()
 
             print(test0.frame.shape)
-            #if test0.frame.shape[0] > 0 and test0.frame.shape[1] > 0:
-            #    cv2.imshow("test", cv2.resize(test0.frame.copy(), (100, 100)))
-            #    cv2.waitKey(1)
+            if test0.frame.shape[0] > 0 and test0.frame.shape[1] > 0:
+                cv2.imshow("test", cv2.resize(test0.frame.copy(), (100, 100)))
+                cv2.waitKey(1)
             time.sleep(1)
 
 
