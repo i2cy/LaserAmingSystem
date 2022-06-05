@@ -178,6 +178,7 @@ class Scanner:
                         # box = np.int0(box)
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
+                        self.matrix_img = approx
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
@@ -273,13 +274,14 @@ class Scanner:
         matrix_obj = np.array([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.np.float32)
         _,R,T=cv2.solvePnP(matrix_obj,matrix_img,mtx,dist)
 
-
         sita_x = dg(R[0][0])
         sita_y = dg(R[1][0])
         sita_z = dg(R[2][0])
         print("sita_x is  ", sita_x)
-        print("sita_y is  ", sita_y)
+        print("y轴旋转角 is  ", sita_y)
         print("sita_z is  ", sita_z)
+
+        return sita_y
 
 
 
@@ -308,14 +310,16 @@ def test_phase1():
 
 
 def test_phase2():
-    cap = CameraPipe((2,), (320, 240), 60)
+    cap = CameraPipe((0,), (320, 240), 60)
     cap.start()
 
     test1 = Scanner(cap)
 
     test1.readFrame()
     a = test1.scanTargetSurface()
-    print(a)
+    print(a.shape)
+
+    test1.pnpSolve()
 
     test1.readROI()
     b = test1.scanTags()
@@ -332,10 +336,12 @@ def test_phase2():
     cap.stop()
 
 
+
+
 if __name__ == "__main__":
 
     test_phase2()
 
-    #test_phase1()
+    # test_phase1()
 
 
