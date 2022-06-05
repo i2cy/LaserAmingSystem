@@ -274,12 +274,12 @@ class Scanner:
         matrix_obj = np.mat([[0,0,0],[50,0,0],[50,50,0],[0,50,0]],dtype=np.float32)
         _,R,T=cv2.solvePnP(matrix_obj,matrix_img,mtx,dist)
         # _,R,T=cv2.solvePnP(matrix_obj,self.matrix_img,mtx,dist,flags=cv2.SOLVEPNP_P3P)
-        sita_x = dg(R[0][0])
+        # sita_x = dg(R[0][0])
         sita_y = dg(R[1][0])
-        sita_z = dg(R[2][0])
-        print("sita_x is  ", sita_x)
+        # sita_z = dg(R[2][0])
+        # print("sita_x is  ", sita_x)
         print("y轴旋转角 is  ", sita_y)
-        print("sita_z is  ", sita_z)
+        # print("sita_z is  ", sita_z)
 
         return sita_y
 
