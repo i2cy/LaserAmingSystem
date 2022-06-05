@@ -362,20 +362,25 @@ def test_phase2():
 
 if __name__ == "__main__":
     def test_PnPslv():
-        cap = CameraPipe((2,), (320, 240), 60)
+        cap = CameraPipe((0,), (320, 240))
         cap.start()
         test0 = Scanner(cap)
         # test0.target_cords = np.array([[58, 45], [59, 124], [136, 125], [136, 45]], dtype=np.float32)
         while True:
-            test0.scanTargetSurface()
-            test0.readROI()
-            test0.pnpSolve()
+            try:
+                test0.scanTargetSurface()
+                if test0.roi is None:
+                    continue
+                test0.readROI()
+                test0.pnpSolve()
 
-            print(test0.frame.shape)
-            if test0.frame.shape[0] > 0 and test0.frame.shape[1] > 0:
-                cv2.imshow("test", cv2.resize(test0.frame.copy(), (100, 100)))
-                cv2.waitKey(1)
-            time.sleep(1)
+                print(test0.frame.shape)
+                if test0.frame.shape[0] > 0 and test0.frame.shape[1] > 0:
+                    cv2.imshow("test", cv2.resize(test0.frame.copy(), (100, 100)))
+                    cv2.waitKey(1)
+                time.sleep(1)
+            except KeyboardInterrupt:
+                cap.stop()
 
 
     test_PnPslv()
