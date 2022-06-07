@@ -4,6 +4,8 @@
 # Project: sources
 # Filename: control
 # Created on: 2022/6/1
+
+import os
 import threading
 import time
 
@@ -193,6 +195,7 @@ if __name__ == '__main__':
     TEST_TIME = 10
 
     print("initializing")
+    os.system("sudo chmod 777 /dev/ttyS4")
     clt = PTControl("/dev/ttyS4", 115200)
     clt.connect()
     clt.moveTo()
@@ -202,12 +205,12 @@ if __name__ == '__main__':
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-100, 100]
 
-    cap = CameraPipe((0,), (320, 240))
+    cap = CameraPipe((0,), (320, 240), exposure=70)
     cap.start()
     sc = Scanner(cap)
 
-    ctrl = Control(pidx, pidy, sc, x_filter=0.6, y_filter=0.6)
-    ctrl.move(200, -150)
+    ctrl = Control(pidx, pidy, sc, x_filter=0.6, y_filter=0.6, laser_args=(1, 60, 210))
+    ctrl.move(0, 0)
     time.sleep(5)
     sc.readFrame()
     sc.scanTargetSurface()
@@ -220,8 +223,8 @@ if __name__ == '__main__':
     ctrl.startDebug()
     pidx.start()
     pidy.start()
-    time.sleep(TEST_TIME/2)
-    ctrl.move(130, -85)
+    time.sleep(TEST_TIME / 2)
+    ctrl.move(20, 20)
     time.sleep(TEST_TIME / 2)
     ctrl.stopDebug()
 

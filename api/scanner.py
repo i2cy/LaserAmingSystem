@@ -40,9 +40,9 @@ class CameraPipe:
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
         if os.name != "nt":
-            os.system("v4l2-ctl -c exposure={} -d /dev/video{}".format(
+            os.system("sudo v4l2-ctl -c exposure={} -d /dev/video{}".format(
                 self.exposure, self.__video_args[0]))
-            os.system("v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
+            os.system("sudo v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
                 self.analogue_gain, self.__video_args[0]))
         if self.frame_rate is not None:
             cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
@@ -244,7 +244,12 @@ class Scanner:
                     # if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆 method_1
                     if (shaperate_H * size[0] * size[1]) > area > (shaperate_L * size[0] * size[1]):
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
-                        pos_newsys = [pos[0]+self.roi[0]-160,pos[1]+self.roi[1]-120]
+                        if self.roi is not None:
+                            pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
+                                          pos[1] + self.roi[1] - self.cap.frame_size[1] / 2]
+                        else:
+                            pos_newsys = [pos[0] - self.cap.frame_size[0] / 2,
+                                          pos[1] - self.cap.frame_size[1] / 2]
                         centers.append(pos_newsys)
         return centers
 
@@ -270,8 +275,8 @@ class Scanner:
         # 程序待完成
         flag, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)  # 阈值化处理
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        #cv2.imshow("mask", mask)
-        #cv2.waitKey(1)
+        # cv2.imshow("mask", mask)
+        # cv2.waitKey(1)
         if len(contours) == 0:
             return [0, 0]
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -285,7 +290,12 @@ class Scanner:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center_roi = [x + w / 2, y + h / 2]
-            center = [self.roi[0]+center_roi[0]-160,self.roi[1]+center_roi[1]-120]
+            if self.roi is not None:
+                center = [self.roi[0] + center_roi[0] - self.cap.frame_size[0] / 2,
+                          self.roi[1] + center_roi[1] - self.cap.frame_size[1] / 2]
+            else:
+                center = [center_roi[0] - self.cap.frame_size[0] / 2,
+                          center_roi[1] - self.cap.frame_size[1] / 2]
             return center
 
     def pnpSolve(self):
