@@ -21,7 +21,7 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (2, 0, 0)
+P, I, D = (2.36, 4.75, 0.3)  # initial tuned values
 
 
 class Control:
@@ -205,12 +205,12 @@ if __name__ == '__main__':
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-100, 100]
 
-    cap = CameraPipe((0,), (320, 240), exposure=70)
+    cap = CameraPipe((0,), (320, 240), analogue_gain=60)
     cap.start()
     sc = Scanner(cap)
 
     ctrl = Control(pidx, pidy, sc, x_filter=0.6, y_filter=0.6, laser_args=(1, 60, 210))
-    ctrl.move(0, 0)
+    ctrl.move(-15, -15)
     time.sleep(5)
     sc.readFrame()
     sc.scanTargetSurface()
@@ -224,7 +224,7 @@ if __name__ == '__main__':
     pidx.start()
     pidy.start()
     time.sleep(TEST_TIME / 2)
-    ctrl.move(20, 20)
+    ctrl.move(10, 10)
     time.sleep(TEST_TIME / 2)
     ctrl.stopDebug()
 
