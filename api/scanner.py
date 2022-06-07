@@ -235,7 +235,7 @@ class Scanner:
             for cnt in contours:
                 cv2.drawContours(self.frame, cnt, -1, (0, 255, 0), 2)
                 area = cv2.contourArea(cnt)
-                if area_H > area > area_L:
+                if area_H > area > area_L and len(cnt) >= 5:
                     pos, size, ang = cv2.fitEllipse(cnt)
                     # x, y, w, h = cv2.boundingRect(cnt)        # rect boud method_1
                     # cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
@@ -282,11 +282,6 @@ class Scanner:
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center = [x + w / 2, y + h / 2]
             return center
-
-    def getAngle(self):
-        if self.target_cords is None:
-            return None
-
 
     def pnpSolve(self):
         if self.roi is None:
