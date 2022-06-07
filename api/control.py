@@ -16,6 +16,17 @@ else:
     from .scanner import Scanner
 
 
+class Control:
+
+    def __init__(self, x_PID, y_PID, scanner):
+        assert isinstance(x_PID, LaserYawControl)
+        assert isinstance(y_PID, LaserPitchControl)
+        self.pidX = x_PID
+        self.pidY = y_PID
+
+        self.scanner = scanner
+
+
 class LaserYawControl(PID):
 
     def __init__(self, ctl_clt, scanner, kp=1, ki=0, kd=0, core_freq=50):
@@ -31,7 +42,7 @@ class LaserYawControl(PID):
         self.dt = 1 / core_freq
 
     def coreTask(self):
-        self.ctl_clt.speed_pitch = self.out
+        self.ctl_clt.speed_x = self.out
 
     def start(self):
         if not self.ctl_clt.live:
@@ -54,7 +65,7 @@ class LaserPitchControl(PID):
         self.dt = 1 / core_freq
 
     def coreTask(self):
-        self.ctl_clt.speed_pitch = self.out
+        self.ctl_clt.speed_y = self.out
 
     def start(self):
         if not self.ctl_clt.live:

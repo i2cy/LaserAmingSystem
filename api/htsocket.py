@@ -19,8 +19,9 @@ CENTER = (1070, 5150)
 
 class PTControl(HTSocket):
 
-    def __init__(self, port, baud_rate, ctl_freq=50, speed_dead_zone=(-20, 20),
-                 pitch_range=(0, 2400), yaw_range=(3750, 6750)):
+    def __init__(self, port, baud_rate, ctl_freq=50, center=(920, 5150), speed_dead_zone=(-20, 20),
+                 pitch_range=(0, 2400), yaw_range=(3750, 6750),
+                 yaw_90=5000, pitch_90=4700, pitch_center=3975, distance_cm=100):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
         self.dead_zone = speed_dead_zone
@@ -31,21 +32,38 @@ class PTControl(HTSocket):
         self.yaw = 0
         self.speed_pitch = 0
         self.speed_yaw = 0
+        self.speed_x = 0
+        self.speed_y = 0
 
         self.flag_core_running = False
         self.live = False
         self.core_time = 0
+        self.center = center
+        self.yaw_step = yaw_90 / 90
+        self.pitch_step = pitch_90 / 90
+        self.pitch_center = pitch_center
+        self.distance = distance_cm
+
+        self.__ang_conv = 180 / np.pi
 
     def __core(self):
         self.flag_core_running = True
+
         while self.live:
             try:
                 t0 = time.time()
 
-                if self.speed_pitch < self.dead_zone[0] or self.speed_pitch > self.dead_zone[1]:
-                    self.pitch += self.speed_pitch * self.core_time
+                if self.speed_x or self.speed_y:
+                    dx = self.speed_x * self.core_time
+                    dy = self.speed_y * self.core_time
+                    x, y = self.getDist()
+                    # print(x, y, x + dx, y + dy)
+                    # print(self.getAng())
+                    self.moveToDist(x - dx, y + dy)
+                    # print(self.pitch, self.yaw)
 
-                if self.speed_yaw < self.dead_zone[0] or self.speed_yaw > self.dead_zone[1]:
+                else:
+                    self.pitch += self.speed_pitch * self.core_time
                     self.yaw += self.speed_yaw * self.core_time
 
                 if self.pitch < self.pitch_range[0]:
@@ -85,11 +103,53 @@ class PTControl(HTSocket):
     def debug(self):
         return {"core_freq": 1 / self.core_time}
 
-    def moveTo(self, pitch=1200, yaw=5250):
+    def getAng(self):
+        theta = (self.pitch_center - self.pitch) / self.pitch_step
+        gamma = (self.center[1] - self.yaw) / self.yaw_step
+        return theta, gamma
+
+    def getDist(self):
+        theta, gamma = self.getAng()
+        theta /= self.__ang_conv
+        gamma /= -self.__ang_conv
+        x = self.distance * np.tan(gamma)
+        y = self.distance / (np.cos(gamma) * np.tan(theta))
+        return x, y
+
+    def moveTo(self, pitch=None, yaw=None):
+        if pitch is None:
+            pitch = self.center[0]
+        if yaw is None:
+            yaw = self.center[1]
         self.pitch = pitch
         self.yaw = yaw
 
-    def move(self, speed_pitch=0, speed_yaw=0):
+    def moveToAng(self, theta=None, gamma=None):
+        if theta is None:
+            pitch = self.center[0]
+        else:
+            pitch = self.pitch_center - theta * self.pitch_step
+        if gamma is None:
+            yaw = self.center[1]
+        else:
+            yaw = self.center[1] + gamma * self.yaw_step
+        self.pitch = pitch
+        self.yaw = yaw
+
+    def moveToDist(self, x=0, y=0):
+        theta = np.arccos(y / np.power(self.distance**2 + x**2 + y**2, 0.5)) * self.__ang_conv
+        gamma = np.arctan(x / self.distance) * self.__ang_conv
+        self.moveToAng(theta, gamma)
+
+    def moveDist(self, speed_x=0, speed_y=0):
+        self.speed_x = speed_x
+        self.speed_y = speed_y
+
+    def moveAng(self, speed_pitch=0, speed_yaw=0):
+        if self.dead_zone[1] > self.speed_yaw > self.dead_zone[0]:
+            speed_yaw = 0
+        if self.dead_zone[1] > self.speed_pitch > self.dead_zone[0]:
+            speed_pitch = 0
         self.speed_pitch = speed_pitch
         self.speed_yaw = speed_yaw
 
@@ -99,50 +159,49 @@ def move(clt, pitch, yaw):
     clt.moveTo(pitch, yaw)
 
 
+def smoothMove(clt, start, to, dots=100, delay=0.02):
+    assert isinstance(clt, PTControl)
+    x = np.linspace(start[0], to[0], dots)
+    y = np.linspace(start[1], to[1], dots)
+    for i, val in enumerate(x):
+        clt.moveToDist(val, y[i])
+        time.sleep(delay)
+
+
 def test():
     DELAY = 0.01
     clt = PTControl(COM, BAUD_RATE)
     clt.connect()
-    move(clt, *CENTER)
-    time.sleep(1)
 
-    p0 = (1040, 5520)
-    p1 = (1360, 4950)
+    clt.moveToDist(87, 37)
 
-    move(clt, *p0)
-    time.sleep(1)
-    move(clt, *p1)
-    time.sleep(1)
+    for i in range(2):
+        smoothMove(clt, (-150, 137), (150, 137), delay=DELAY, dots=300)
+        time.sleep(0.2)
+        smoothMove(clt, (150, 137), (-150, 137), delay=DELAY, dots=300)
+        time.sleep(0.2)
 
-    x = np.linspace(p0[0], p1[0], 50)
-    y = np.linspace(p0[1], p1[1], 50)
-
-    xc = np.linspace(0, 2 * np.pi, 300)
-    yc = np.linspace(0, 2 * np.pi, 300)
-
-    xc = np.sin(xc)
-    yc = np.cos(yc)
-
-    R = 400
-
-    for i2 in range(0, 3):
-        for i, xi in enumerate(x):
-            move(clt, int(xi), int(y[i]))
-            time.sleep(DELAY)
-        time.sleep(0.5)
-        move(clt, *p0)
+    for i in range(2):
+        smoothMove(clt, (23, 37), (23, 87), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (23, 87), (-27, 87), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (-27, 87), (-27, 37), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (-27, 37), (23, 37), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (23, 37), (-27, 87), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (-27, 87), (-27, 37), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (-27, 37), (23, 87), delay=DELAY)
+        time.sleep(0.2)
+        smoothMove(clt, (23, 87), (23, 37), delay=DELAY)
         time.sleep(0.5)
 
-    for i2 in range(0, 3):
-        for i, xi in enumerate(xc):
-            move(clt, CENTER[0] + int(xi * R), CENTER[1] + int(yc[i] * R))
-            time.sleep(DELAY)
-        time.sleep(0.5)
-        move(clt, *CENTER)
-        time.sleep(0.5)
-
-    time.sleep(1)
-    move(clt, *CENTER)
+    time.sleep(0.5)
+    clt.moveTo()
+    time.sleep(0.5)
 
     clt.close()
 
