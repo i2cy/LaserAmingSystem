@@ -142,7 +142,7 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def scanTargetSurface(self, thresh=15, area_H=45000, area_L=4000):
+    def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
         """
         Target surface detector
 
@@ -213,13 +213,15 @@ class Scanner:
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=5, shaperate_H=0.86, shaperate_L=0.65):
+    def scanTags(self, area_H=300, area_L=3, shaperate_H=0.93, shaperate_L=0.54):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags
         """
 
-        while self.frame is None:
+        if self.roi is None:
+            self.readFrame()
+        else:
             self.readROI()
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
@@ -263,11 +265,10 @@ class Scanner:
         :return:
         """
 
-        while self.frame is None:
-            if self.roi is None:
-                self.readFrame()
-            else:
-                self.readROI()
+        if self.roi is None:
+            self.readFrame()
+        else:
+            self.readROI()
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)

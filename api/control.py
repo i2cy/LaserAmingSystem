@@ -21,13 +21,13 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (2.36, 4.75, 0.3)  # initial tuned values
+P, I, D = (1.52, 0.02, 0.17)  # initial tuned values
 
 
 class Control:
 
     def __init__(self, x_PID, y_PID, scanner, laser_args=(), core_freq=50,
-                 x_filter=0.1, y_filter=0.1):
+                 x_filter=0.1, y_filter=0.1, verbose=True):
         assert isinstance(x_PID, LaserYawControl)
         assert isinstance(y_PID, LaserPitchControl)
         assert isinstance(scanner, Scanner)
@@ -38,6 +38,8 @@ class Control:
         self.x_filter = x_filter
         self.y_filter = y_filter
         self.laser_args = laser_args
+        self.verbose = verbose
+
         self.live = False
         self.core_time = 1 / core_freq
         self.__current_core_time = 0
@@ -96,7 +98,8 @@ class Control:
             if coord is None:
                 continue
 
-            print(coord)
+            if self.verbose:
+                print("\rLaser Beam at ({}, {})   ".format(*coord), end="")
 
             x_mea, y_mea = coord
 
@@ -149,7 +152,7 @@ class Control:
 
 class LaserYawControl(PID):
 
-    def __init__(self, ctl_clt, kp=1, ki=0, kd=0, core_freq=50):
+    def __init__(self, ctl_clt, kp=1.0, ki=0.0, kd=0.0, core_freq=50):
         super(LaserYawControl, self).__init__(kp=kp, ki=ki, kd=kd, core_freq=core_freq)
         assert isinstance(ctl_clt, PTControl)
 
@@ -170,7 +173,7 @@ class LaserYawControl(PID):
 
 class LaserPitchControl(PID):
 
-    def __init__(self, ctl_clt, kp=1, ki=0, kd=0, core_freq=50):
+    def __init__(self, ctl_clt, kp=1.0, ki=0.0, kd=0.0, core_freq=50):
         super(LaserPitchControl, self).__init__(kp=kp, ki=ki, kd=kd, core_freq=core_freq)
         assert isinstance(ctl_clt, PTControl)
 
@@ -192,56 +195,137 @@ class LaserPitchControl(PID):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    TEST_TIME = 10
+    TEST_TIME = 6
 
     print("initializing")
     os.system("sudo chmod 777 /dev/ttyS4")
-    clt = PTControl("/dev/ttyS4", 115200)
+    clt = PTControl("/dev/ttyS4", 115200, pitch_range=(0, 10000))
     clt.connect()
     clt.moveTo()
+    ang = clt.getAng()
+    clt.moveToAng(0, 0)
 
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-100, 100]
+    pidx.death_area = 2.5
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-100, 100]
+    pidy.death_area = 2.5
 
-    cap = CameraPipe((0,), (320, 240), analogue_gain=60)
+    cap = CameraPipe((0,), (320, 240), analogue_gain=160, exposure=1600)
     cap.start()
     sc = Scanner(cap)
 
-    ctrl = Control(pidx, pidy, sc, x_filter=0.6, y_filter=0.6, laser_args=(1, 60, 210))
+    ctrl = Control(pidx, pidy, sc, x_filter=0.4, y_filter=0.4, laser_args=(1, 60, 210))
     ctrl.move(-15, -15)
-    time.sleep(5)
-    sc.readFrame()
-    sc.scanTargetSurface()
+
+    print("waiting for camera pipe line to be ready")
+
+    fps = cap.getFPS()
+    cnt = 0
+    while fps < 10 and cnt < 6:
+        fps = cap.getFPS()
+        print("\rcamera pipeline core frame rate: {:.2f}  ".format(fps), end="")
+        if fps >= 10:
+            cnt += 1
+        time.sleep(0.5)
+    print("")
+
+    while sc.frame is None:
+        sc.readFrame()
     plt.imshow(cv2.cvtColor(sc.frame, cv2.COLOR_BGR2RGB))
-    plt.show()
+    plt.pause(1)
+    plt.close(1)
+
+    print("scanning target surface")
+
+    while sc.roi is None:
+        try:
+            sc.readFrame()
+            sc.scanTargetSurface()
+        except KeyboardInterrupt:
+            break
+    print("ROI:", sc.roi)
+
+    tags = []
+
+    try:
+        sc.readROI()
+        t = sc.scanTags()
+        tags = []
+        for ele in t:
+            tags.append((ele[0], -ele[1]))
+        print("tags scanned:\n{}".format(tags))
+    except Exception as err:
+        print("failed to read tags,", err)
+
     print("starting control and debuging")
     ctrl.start()
     time.sleep(3)
-    print("recording")
-    ctrl.startDebug()
+
+    clt.moveToAng(*ang)
+    time.sleep(2)
     pidx.start()
     pidy.start()
-    time.sleep(TEST_TIME / 2)
-    ctrl.move(10, 10)
-    time.sleep(TEST_TIME / 2)
-    ctrl.stopDebug()
 
+    print("\n> moving to center spot")
+    ctrl.move(0, 0)
+    time.sleep(TEST_TIME / 2)
+
+    print("\nrecording")
+    ctrl.startDebug()
+
+    t0 = time.time()
+
+    for ele in range(4):
+        if len(tags) >= 1:
+            print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[0]))
+            ctrl.move(*tags[0])
+        else:
+            print("\n> moving to spot {}".format((10, 10)))
+            ctrl.move(10, 10)
+
+        time.sleep(0.1)
+        cnt = 0
+        while cnt < 10:
+            if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
+                cnt += 1
+            time.sleep(0.1)
+
+        if len(tags) > 1:
+            print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
+            ctrl.move(*tags[1])
+        else:
+            print("\n> moving to spot {}".format((-10, -10)))
+            ctrl.move(-10, -10)
+
+        time.sleep(0.1)
+        cnt = 0
+        while cnt < 10:
+            if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
+                cnt += 1
+            time.sleep(0.1)
+
+    ctrl.stopDebug()
     ctrl.stop()
     pidx.pause()
     pidy.pause()
     clt.close()
     cap.stop()
 
-    x = np.linspace(0, TEST_TIME, len(ctrl.x_out))
+    print("")
+    print("test end")
+
+    x = np.linspace(0, time.time() - t0, len(ctrl.x_out))
     plt.subplot(211)
+    plt.title("X")
     plt.plot(x, ctrl.x_exp, color="g")
     plt.plot(x, ctrl.x_mea, color="b")
     plt.plot(x, ctrl.x_out, color="r")
     plt.legend("EMO")
 
     plt.subplot(212)
+    plt.title("Y")
     plt.plot(x, ctrl.y_exp, color="g")
     plt.plot(x, ctrl.y_mea, color="b")
     plt.plot(x, ctrl.y_out, color="r")
