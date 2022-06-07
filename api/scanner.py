@@ -259,7 +259,10 @@ class Scanner:
         """
 
         while self.frame is None:
-            self.readROI()
+            if self.roi is None:
+                self.readFrame()
+            else:
+                self.readROI()
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # frame_blue, frame_green ,gray = cv2.split(self.frame)
