@@ -16,10 +16,13 @@ from math import degrees as dg
 
 class CameraPipe:
 
-    def __init__(self, video_capture_args, frame_size, frame_rate=None):
+    def __init__(self, video_capture_args, frame_size, frame_rate=None,
+                 exposure=1600, analogue_gain=40):
         self.__video_args = video_capture_args
         self.frame_size = frame_size
         self.frame_rate = frame_rate
+        self.exposure = exposure
+        self.analogue_gain = analogue_gain
         self.__queue_frame = Queue(128)
         self.__live = Value(ctypes.c_bool, False)
         self.__frame_time = 0
@@ -36,6 +39,11 @@ class CameraPipe:
         cap = cv2.VideoCapture(*self.__video_args)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
+        if os.name != "nt":
+            os.system("v4l2-ctl -c exposure={} -d /dev/video{}".format(
+                self.exposure, self.__video_args[0]))
+            os.system("v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
+                self.analogue_gain, self.__video_args[0]))
         if self.frame_rate is not None:
             cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
         while self.__live.value:
@@ -205,7 +213,7 @@ class Scanner:
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=50, shaperate_H=0.86, shaperate_L=0.65):
+    def scanTags(self, area_H=300, area_L=5, shaperate_H=0.86, shaperate_L=0.65):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags
@@ -258,8 +266,8 @@ class Scanner:
         # 程序待完成
         flag, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)  # 阈值化处理
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cv2.imshow("mask", mask)
-        cv2.waitKey(1)
+        #cv2.imshow("mask", mask)
+        #cv2.waitKey(1)
         if len(contours) == 0:
             return [0, 0]
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -310,59 +318,59 @@ class Scanner:
         return sita_y
 
 
-def test_phase1():
-    cam = CameraPipe((2,), (320, 240), 60)
+if __name__ == "__main__"
+    def test_phase1():
+        cam = CameraPipe((0,), (320, 240))
 
-    cam.start()
+        cam.start()
 
-    try:
-        while True:
-            frame = cam.getFrame()
-            if frame is None:
-                continue
+        try:
+            while True:
+                frame = cam.getFrame()
+                if frame is None:
+                    continue
 
-            cv2.imshow("frame", frame)
-            print("FPS: {:.2f}".format(cam.getFPS()))
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    except KeyboardInterrupt:
-        pass
+                cv2.imshow("frame", frame)
+                print("FPS: {:.2f}".format(cam.getFPS()))
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        except KeyboardInterrupt:
+            pass
 
-    cv2.destroyAllWindows()
-
-    cam.stop()
-
-
-def test_phase2():
-    cap = CameraPipe((0,), (320, 240), 60)
-    cap.start()
-
-    test1 = Scanner(cap)
-
-    test1.readFrame()
-    a = test1.scanTargetSurface()
-    print(test1.target_cords.shape)
-
-    test1.pnpSolve()
-
-    test1.readROI()
-    b = test1.scanTags()
-    print(b)
-
-    try:
-        while 1:
-            test1.readROI()
-            c = test1.scanLaser()
-            print(c, " ", end="\r")
-    except KeyboardInterrupt:
         cv2.destroyAllWindows()
 
-    cap.stop()
+        cam.stop()
 
 
-if __name__ == "__main__":
+    def test_phase2():
+        cap = CameraPipe((0,), (320, 240))
+        cap.start()
+
+        test1 = Scanner(cap)
+
+        test1.readFrame()
+        a = test1.scanTargetSurface()
+        print(test1.target_cords.shape)
+
+        test1.pnpSolve()
+
+        test1.readROI()
+        b = test1.scanTags()
+        print(b)
+
+        try:
+            while 1:
+                test1.readROI()
+                c = test1.scanLaser()
+                print(c, " ", end="\r")
+        except KeyboardInterrupt:
+            cv2.destroyAllWindows()
+
+        cap.stop()
+
+
     def test_PnPslv():
-        cap = CameraPipe((2,), (320, 240))
+        cap = CameraPipe((0,), (320, 240))
         cap.start()
         test0 = Scanner(cap)
         # test0.target_cords = np.array([[58, 45], [59, 124], [136, 125], [136, 45]], dtype=np.float32)
@@ -383,8 +391,8 @@ if __name__ == "__main__":
                 cap.stop()
 
 
-    test_PnPslv()
+    # test_PnPslv()
 
-    # test_phase2()
+    test_phase2()
 
     # test_phase1()

@@ -26,6 +26,12 @@ class Control:
 
         self.scanner = scanner
 
+    def init(self):
+        # 初始化CV扫描器
+        while self.scanner.roi is None:
+            self.scanner.scanTargetSurface()
+
+
 
 class LaserYawControl(PID):
 
