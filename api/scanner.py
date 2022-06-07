@@ -244,7 +244,8 @@ class Scanner:
                     # if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆 method_1
                     if (shaperate_H * size[0] * size[1]) > area > (shaperate_L * size[0] * size[1]):
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
-                        centers.append(pos)
+                        pos_newsys = [pos[0]+self.roi[0]-160,pos[1]+self.roi[1]-120]
+                        centers.append(pos_newsys)
         return centers
 
     def scanLaser(self, area_L=1, area_H=40, thresh=210):
@@ -280,7 +281,8 @@ class Scanner:
         if area_L < w * h < area_H:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
-            center = [x + w / 2, y + h / 2]
+            center_roi = [x + w / 2, y + h / 2]
+            center = [self.roi[0]+center_roi[0]-160,self.roi[1]+center_roi[1]-120]
             return center
 
     def pnpSolve(self):
