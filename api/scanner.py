@@ -318,7 +318,7 @@ class Scanner:
         return sita_y
 
 
-if __name__ == "__main__"
+if __name__ == "__main__":
     def test_phase1():
         cam = CameraPipe((0,), (320, 240))
 
