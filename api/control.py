@@ -231,6 +231,12 @@ if __name__ == '__main__':
         time.sleep(0.5)
     print("")
 
+    print("auto tuning ISO...")
+    sc.autoISO()
+    print("current ISO: {}".format(sc.iso))
+
+    time.sleep(1)
+
     while sc.frame is None:
         sc.readFrame()
     plt.imshow(cv2.cvtColor(sc.frame, cv2.COLOR_BGR2RGB))

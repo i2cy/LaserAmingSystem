@@ -5,6 +5,7 @@
 
 import threading
 import time
+import matplotlib.pyplot as plt
 import signal
 import cv2
 import ctypes
@@ -152,11 +153,12 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def autoISO(self, exp = 50, dead_zone = 30, p = -0.05):
+    def autoISO(self, exp=50, dead_zone=30, p=-0.05):
         """
             auto adjust camera ISO
             return: int     error
         """
+
         def findPeak_10(bins):
             peak = 0
             peak_pos = 0
@@ -174,18 +176,27 @@ class Scanner:
             self.cap.setCamArgs(analogue_gain=self.iso + add_num)
             self.iso = self.iso + add_num
 
-        while 1:
+        while True:
             self.readFrame()
-            isoarea = self.frame[self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4,
-                      0: self.cap.frame_size[1]]
+            isoarea = self.frame[
+                      self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, 0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
             hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
+            plt.cla()
+            plt.plot(hist)
+            plt.pause(0.1)
             dif = exp - findPeak_10(bins)
-            if dead_zone > dif > 0-dead_zone:
+
+            print("exp: {:.2f}\t err: {:.2f}\t out: {:.2f}".format(exp, dif, dif * p))
+
+            if dead_zone > dif > 0 - dead_zone:
                 break
             else:
                 add_num = dif * p
                 setISO_add(add_num)
+
+        plt.close(1)
+
         return dif
 
     def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
