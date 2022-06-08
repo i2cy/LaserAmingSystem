@@ -122,6 +122,7 @@ class Scanner:
         self.frame = frame
         self.roi = None
         self.target_cords = None
+        self.iso = 40
 
     def readFrame(self):
         """
@@ -151,30 +152,31 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def getISO(self,iso):
-        
+    def getISO(self, iso):
+
         def findPeak_10(bins):
             peak = 0
             peak_pos = 0
             k = 0
-            for i in range(len(bins)-11):
+            for i in range(len(bins) - 11):
                 if k > peak:
                     peak = k
-                    peak_pos = i-1
+                    peak_pos = i - 1
                 k = 0
                 for j in range(10):
-                    k = k + hist[i+j]
+                    k = k + hist[i + j]
             return peak_pos
-        
+
         def setISO_add(add_num):
-            pass
+            self.cap.setCamArgs(analogue_gain=self.iso + add_num)
+            self.iso = self.iso + add_num
 
-
-        while(1):
+        while 1:
             self.readFrame()
-            isoarea = self.frame[self.cap.frame_size[0]//4 : 3*self.cap.frame_size[0]//4, 0 : self.cap.frame_size[1]]
+            isoarea = self.frame[self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4,
+                      0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
-            hist,bins = np.histogram(gray.ravel(), 256, [0, 256])
+            hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
             dif = findPeak_10(bins) - 50
             if 30 > dif > -30:
                 break
@@ -183,9 +185,6 @@ class Scanner:
                 setISO_add(add_num)
 
         return dif
-        
-
-            
 
     def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
         """
@@ -226,7 +225,7 @@ class Scanner:
                         x, y, w, h = cv2.boundingRect(c)
                         count = 0
                         for i in range(50):
-                            specimen_point = (x + w//2, y + (h // 50)*i)
+                            specimen_point = (x + w // 2, y + (h // 50) * i)
                             # print(specimen_point[0], specimen_point[1])
                             if bina[specimen_point[0], specimen_point[1], 0] == 255:
                                 count += 1
