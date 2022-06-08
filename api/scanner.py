@@ -75,6 +75,7 @@ class CameraPipe:
             if analogue_gain is not None:
                 os.system("sudo v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
                     analogue_gain, self.__video_args[0]))
+            print("ISO:", analogue_gain)
 
     def getFrame(self):
         return self.__frame_buff
@@ -153,23 +154,20 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def autoISO(self, exp=50, dead_zone=30, p=-0.05):
+    def autoISO(self, exp=130, dead_zone=15, p=0.05, window=11, skip=20,
+                smooth_window=7, peek_thresh=900):
         """
             auto adjust camera ISO
             return: int     error
         """
 
-        def findPeak_10(bins):
-            peak = 0
+        def findPeak(bins):
             peak_pos = 0
             k = 0
-            for i in range(len(bins) - 11):
-                if k > peak:
-                    peak = k
+            for i in range(skip, len(bins) - window):
+                if k > peek_thresh:
                     peak_pos = i - 1
-                k = 0
-                for j in range(10):
-                    k = k + hist[i + j]
+                k = sum(bins[i: i + window])
             return peak_pos
 
         def setISO_add(add_num):
@@ -182,10 +180,15 @@ class Scanner:
                       self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, 0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
             hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
+
+            gray = cv2.GaussianBlur(gray, (smooth_window, smooth_window), 0)
+            smoothed, bins = np.histogram(gray.ravel(), 256, [0, 256])
+
             plt.cla()
-            plt.plot(hist)
+
+            plt.plot(smoothed)
             plt.pause(0.1)
-            dif = exp - findPeak_10(bins)
+            dif = exp - findPeak(smoothed)
 
             print("exp: {:.2f}\t err: {:.2f}\t out: {:.2f}".format(exp, dif, dif * p))
 
@@ -242,7 +245,7 @@ class Scanner:
                             # print(specimen_point[0], specimen_point[1])
                             if bina[specimen_point[0], specimen_point[1], 0] == 255:
                                 count += 1
-                        print("count = ", count)
+                        # print("count = ", count)
                         if count < 30:  # 是否识别到靶面
                             continue
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)

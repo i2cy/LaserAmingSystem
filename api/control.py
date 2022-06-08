@@ -240,7 +240,7 @@ if __name__ == '__main__':
     while sc.frame is None:
         sc.readFrame()
     plt.imshow(cv2.cvtColor(sc.frame, cv2.COLOR_BGR2RGB))
-    plt.pause(1)
+    plt.pause(2)
     plt.close(1)
 
     print("scanning target surface")
