@@ -171,7 +171,7 @@ class Scanner:
             return peak_pos
 
         def setISO_add(add_num):
-            self.cap.setCamArgs(analogue_gain=self.iso + add_num)
+            self.cap.setCamArgs(analogue_gain=self.iso - add_num)
             self.iso = self.iso + add_num
 
         while 1:
