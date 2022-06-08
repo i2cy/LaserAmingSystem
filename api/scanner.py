@@ -152,7 +152,7 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def autoISO(self):
+    def autoISO(self, exp = 50, dead_zone = 30, p = -0.05):
         """
             auto adjust camera ISO
             return: int     error
@@ -171,7 +171,7 @@ class Scanner:
             return peak_pos
 
         def setISO_add(add_num):
-            self.cap.setCamArgs(analogue_gain=self.iso - add_num)
+            self.cap.setCamArgs(analogue_gain=self.iso + add_num)
             self.iso = self.iso + add_num
 
         while 1:
@@ -180,13 +180,12 @@ class Scanner:
                       0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
             hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
-            dif = findPeak_10(bins) - 50
-            if 30 > dif > -30:
+            dif = exp - findPeak_10(bins)
+            if dead_zone > dif > 0-dead_zone:
                 break
             else:
-                add_num = dif * 0.05
+                add_num = dif * p
                 setISO_add(add_num)
-
         return dif
 
     def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
