@@ -66,6 +66,15 @@ class CameraPipe:
     def read(self):
         return self.__frame_buff is None, self.__frame_buff
 
+    def setCamArgs(self, exposure=None, analogue_gain=None):
+        if os.name != "nt":
+            if exposure is not None:
+                os.system("sudo v4l2-ctl -c exposure={} -d /dev/video{}".format(
+                    exposure, self.__video_args[0]))
+            if analogue_gain is not None:
+                os.system("sudo v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
+                    analogue_gain, self.__video_args[0]))
+
     def getFrame(self):
         return self.__frame_buff
 

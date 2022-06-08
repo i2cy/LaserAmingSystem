@@ -212,7 +212,7 @@ if __name__ == '__main__':
     pidy.out_limit = [-100, 100]
     pidy.death_area = 2.5
 
-    cap = CameraPipe((0,), (320, 240), analogue_gain=160, exposure=1600)
+    cap = CameraPipe((0,), (320, 240), analogue_gain=130, exposure=1600)
     cap.start()
     sc = Scanner(cap)
 
