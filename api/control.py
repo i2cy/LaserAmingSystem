@@ -208,11 +208,14 @@ if __name__ == '__main__':
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-100, 100]
     pidx.death_area = 2.5
+    pidx.integ_limit = [-10, 10]
+
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-100, 100]
     pidy.death_area = 2.5
+    pidy.integ_limit = [-10, 10]
 
-    cap = CameraPipe((0,), (320, 240), analogue_gain=130, exposure=1600)
+    cap = CameraPipe((0,), (320, 240), analogue_gain=16, exposure=1600)
     cap.start()
     sc = Scanner(cap)
 
@@ -283,34 +286,37 @@ if __name__ == '__main__':
 
     t0 = time.time()
 
-    for ele in range(4):
-        if len(tags) >= 1:
-            print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[0]))
-            ctrl.move(*tags[0])
-        else:
-            print("\n> moving to spot {}".format((10, 10)))
-            ctrl.move(10, 10)
+    try:
+        for ele in range(4):
+            if len(tags) >= 1:
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[0]))
+                ctrl.move(*tags[0])
+            else:
+                print("\n> moving to spot {}".format((10, 10)))
+                ctrl.move(10, 10)
 
-        time.sleep(0.1)
-        cnt = 0
-        while cnt < 10:
-            if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
-                cnt += 1
             time.sleep(0.1)
+            cnt = 0
+            while cnt < 10:
+                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
+                    cnt += 1
+                time.sleep(0.1)
 
-        if len(tags) > 1:
-            print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
-            ctrl.move(*tags[1])
-        else:
-            print("\n> moving to spot {}".format((-10, -10)))
-            ctrl.move(-10, -10)
+            if len(tags) > 1:
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
+                ctrl.move(*tags[1])
+            else:
+                print("\n> moving to spot {}".format((-10, -10)))
+                ctrl.move(-10, -10)
 
-        time.sleep(0.1)
-        cnt = 0
-        while cnt < 10:
-            if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
-                cnt += 1
             time.sleep(0.1)
+            cnt = 0
+            while cnt < 10:
+                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
+                    cnt += 1
+                time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
 
     ctrl.stopDebug()
     ctrl.stop()

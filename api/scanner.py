@@ -154,7 +154,7 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def autoISO(self, exp=130, dead_zone=15, p=0.05, window=11, skip=20,
+    def autoISO(self, exp=130, dead_zone=15, p=0.1, window=11, skip=20,
                 smooth_window=7, peek_thresh=900):
         """
             auto adjust camera ISO
@@ -202,10 +202,11 @@ class Scanner:
 
         return dif
 
-    def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
+    def scanTargetSurface(self, thresh=15, area_H=45000, area_L=4000, validation_thresh=0):
         """
         Target surface detector
 
+        :param validation_thresh:
         :param thresh: int (0~255, default:100), brightness threshold for verification
         :param area_H: int (>0, default:45000), maxim area for filter
         :param area_L: int (>0, default:4000), minim area for filter
@@ -217,7 +218,12 @@ class Scanner:
 
         self.roi = None
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
-        flag, bina = cv2.threshold(self.frame, thresh, 255, cv2.THRESH_BINARY)
+        flag, bina = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
+
+        plt.cla()
+        plt.imshow(bina)
+        plt.pause(0.1)
+
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
@@ -243,10 +249,10 @@ class Scanner:
                         for i in range(50):
                             specimen_point = (x + w // 2, y + (h // 50) * i)
                             # print(specimen_point[0], specimen_point[1])
-                            if bina[specimen_point[0], specimen_point[1], 0] == 255:
+                            if bina[specimen_point[0], specimen_point[1]] == 255:
                                 count += 1
                         # print("count = ", count)
-                        if count < 30:  # 是否识别到靶面
+                        if count < validation_thresh:  # 是否识别到靶面
                             continue
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                         # rect = cv2.minAreaRect(c)
@@ -268,12 +274,13 @@ class Scanner:
                                 ind = 2
                             else:
                                 ind = 3
-                            self.target_cords[ind] = arr_t2[i]
+                            self.target_cords[ind] = (arr_t2[i][0] - self.cap.frame_size[0] / 2,
+                                                      arr_t2[i][1] - self.cap.frame_size[1] / 2)
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=3, shaperate_H=0.93, shaperate_L=0.54):
+    def scanTags(self, area_H=300, area_L=3, shaperate_H=0.96, shaperate_L=0.54):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags
@@ -304,7 +311,11 @@ class Scanner:
                     # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                     # print(area/(w*h))
                     # if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆 method_1
-                    if (shaperate_H * size[0] * size[1]) > area > (shaperate_L * size[0] * size[1]):
+
+                    print("ellipse: {:.4f}".format(area / (np.pi * size[0] * size[1] / 4)))
+
+                    if (shaperate_H * np.pi * size[0] * size[1] / 4) > area \
+                            > (shaperate_L * np.pi * size[0] * size[1] / 4):
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
                         if self.roi is not None:
                             pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
