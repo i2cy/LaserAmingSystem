@@ -152,8 +152,11 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def getISO(self, iso):
-
+    def autoISO(self):
+        """
+            auto adjust camera ISO
+            return: int     error
+        """
         def findPeak_10(bins):
             peak = 0
             peak_pos = 0
