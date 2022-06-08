@@ -21,7 +21,7 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (1.52, 0.02, 0.17)  # initial tuned values
+P, I, D = (1.24, 0.01, 0.14)  # initial tuned values
 
 
 class Control:
@@ -92,7 +92,10 @@ class Control:
         y_dlpf = 0
         while self.live:
             t0 = time.time()
-            self.scanner.readFrame()
+            try:
+                self.scanner.readROI()
+            except:
+                self.scanner.readFrame()
             coord = self.scanner.scanLaser(*self.laser_args)
 
             if coord is None:
@@ -200,8 +203,8 @@ if __name__ == '__main__':
     print("initializing")
     os.system("sudo chmod 777 /dev/ttyS4")
     clt = PTControl("/dev/ttyS4", 115200, pitch_range=(0, 10000))
+    clt.moveToAng(80, 0)
     clt.connect()
-    clt.moveTo()
     ang = clt.getAng()
     clt.moveToAng(0, 0)
 
@@ -215,12 +218,11 @@ if __name__ == '__main__':
     pidy.death_area = 2.5
     pidy.integ_limit = [-10, 10]
 
-    cap = CameraPipe((0,), (320, 240), analogue_gain=16, exposure=1600)
+    cap = CameraPipe((0,), (320, 240), analogue_gain=16, exposure=1660)
     cap.start()
     sc = Scanner(cap)
 
-    ctrl = Control(pidx, pidy, sc, x_filter=0.4, y_filter=0.4, laser_args=(1, 60, 210))
-    ctrl.move(-15, -15)
+    ctrl = Control(pidx, pidy, sc, x_filter=0.4, y_filter=0.4, laser_args=(1, 60, 220))
 
     print("waiting for camera pipe line to be ready")
 
@@ -234,8 +236,13 @@ if __name__ == '__main__':
         time.sleep(0.5)
     print("")
 
+    print("reinitializing camera arguments with gst-launcher")
+    os.system("gst-camera.sh > nul 2> nul")
+    time.sleep(4)
+    os.system("stop-gst-camera.sh > nul 2> nul")
+
     print("auto tuning ISO...")
-    sc.autoISO()
+    sc.autoISO(peek_thresh=1000)
     print("current ISO: {}".format(sc.iso))
 
     time.sleep(1)

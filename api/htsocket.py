@@ -19,9 +19,9 @@ CENTER = (1070, 5150)
 
 class PTControl(HTSocket):
 
-    def __init__(self, port, baud_rate, ctl_freq=50, center=(920, 5150), speed_dead_zone=(-20, 20),
-                 pitch_range=(0, 2400), yaw_range=(3750, 6750),
-                 yaw_90=5000, pitch_90=4700, pitch_center=3975, distance_cm=100):
+    def __init__(self, port, baud_rate, ctl_freq=50, center=(800, 5150), speed_dead_zone=(-20, 20),
+                 pitch_range=(800, 5400), yaw_range=(3750, 6750),
+                 yaw_90=5000, pitch_90=4600, pitch_center=5300, distance_cm=100):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
         self.dead_zone = speed_dead_zone
@@ -173,30 +173,30 @@ def test():
     clt = PTControl(COM, BAUD_RATE)
     clt.connect()
 
-    clt.moveToDist(87, 37)
+    clt.moveToDist(30, 0)
 
     for i in range(2):
-        smoothMove(clt, (-150, 137), (150, 137), delay=DELAY, dots=300)
+        smoothMove(clt, (-80, 100), (80, 100), delay=DELAY, dots=300)
         time.sleep(0.2)
-        smoothMove(clt, (150, 137), (-150, 137), delay=DELAY, dots=300)
+        smoothMove(clt, (80, 100), (-80, 100), delay=DELAY, dots=300)
         time.sleep(0.2)
 
     for i in range(2):
-        smoothMove(clt, (23, 37), (23, 87), delay=DELAY)
+        smoothMove(clt, (23, 10), (23, 60), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (23, 87), (-27, 87), delay=DELAY)
+        smoothMove(clt, (23, 60), (-27, 60), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (-27, 87), (-27, 37), delay=DELAY)
+        smoothMove(clt, (-27, 60), (-27, 10), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (-27, 37), (23, 37), delay=DELAY)
+        smoothMove(clt, (-27, 10), (23, 10), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (23, 37), (-27, 87), delay=DELAY)
+        smoothMove(clt, (23, 10), (-27, 60), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (-27, 87), (-27, 37), delay=DELAY)
+        smoothMove(clt, (-27, 60), (-27, 10), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (-27, 37), (23, 87), delay=DELAY)
+        smoothMove(clt, (-27, 10), (23, 60), delay=DELAY)
         time.sleep(0.2)
-        smoothMove(clt, (23, 87), (23, 37), delay=DELAY)
+        smoothMove(clt, (23, 60), (23, 10), delay=DELAY)
         time.sleep(0.5)
 
     time.sleep(0.5)
