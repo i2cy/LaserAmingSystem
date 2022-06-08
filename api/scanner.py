@@ -142,6 +142,9 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
+    def getISO():
+        isoarea = 
+
     def scanTargetSurface(self, thresh=5, area_H=45000, area_L=4000):
         """
         Target surface detector
@@ -181,11 +184,11 @@ class Scanner:
                         x, y, w, h = cv2.boundingRect(c)
                         count = 0
                         for i in range(50):
-                            specimen_point = (x + (w // 50) * i, y + h // 2)
+                            specimen_point = (x + w//2, y + (h // 50)*i)
                             # print(specimen_point[0], specimen_point[1])
                             if bina[specimen_point[0], specimen_point[1], 0] == 255:
                                 count += 1
-                        # print("count = ", count)
+                        print("count = ", count)
                         if count < 30:  # 是否识别到靶面
                             continue
                         # cv2.rectangle(self.frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
