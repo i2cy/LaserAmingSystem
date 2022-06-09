@@ -91,7 +91,7 @@ class Control:
         x_dlpf = 0
         y_dlpf = 0
         while self.live:
-            t0 = time.time()
+            ctl_t0 = time.time()
             try:
                 self.scanner.readROI(offset=10)
             except:
@@ -134,10 +134,10 @@ class Control:
                 self.y_exp.append(self.pidY.expectation)
                 self.y_out.append(self.pidY.out)
 
-            delay = self.core_time - t0 + time.time()
+            delay = self.core_time - ctl_t0 + time.time()
             if delay > 0:
                 time.sleep(delay)
-            self.__current_core_time = time.time() - t0
+            self.__current_core_time = time.time() - ctl_t0
 
     def isStable(self, err_max=2):
         return ctrl.pidX.err < err_max and ctrl.pidY.err < err_max
