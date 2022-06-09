@@ -18,7 +18,7 @@ from math import degrees as dg
 class CameraPipe:
 
     def __init__(self, video_capture_args, frame_size, frame_rate=None,
-                 exposure=1600, analogue_gain=40):
+                 exposure=None, analogue_gain=None):
         self.__video_args = video_capture_args
         self.frame_size = frame_size
         self.frame_rate = frame_rate
@@ -41,10 +41,7 @@ class CameraPipe:
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
         if os.name != "nt":
-            os.system("sudo v4l2-ctl -c exposure={} -d /dev/video{}".format(
-                self.exposure, self.__video_args[0]))
-            os.system("sudo v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
-                self.analogue_gain, self.__video_args[0]))
+            self.setCamArgs(self.exposure, self.analogue_gain)
         if self.frame_rate is not None:
             cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
         while self.__live.value:
@@ -202,7 +199,7 @@ class Scanner:
 
         return dif
 
-    def scanTargetSurface(self, thresh=15, area_H=45000, area_L=4000, validation_thresh=0):
+    def scanTargetSurface(self, thresh=15, area_H=20000, area_L=4000, validation_thresh=20):
         """
         Target surface detector
 
@@ -280,7 +277,7 @@ class Scanner:
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=3, shaperate_H=0.96, shaperate_L=0.54):
+    def scanTags(self, area_H=300, area_L=2, shaperate_H=0.96, shaperate_L=0.54):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags

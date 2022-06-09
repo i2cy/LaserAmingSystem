@@ -209,12 +209,12 @@ if __name__ == '__main__':
     clt.moveToAng(0, 0)
 
     pidx = LaserYawControl(clt, P, I, D)
-    pidx.out_limit = [-100, 100]
+    pidx.out_limit = [-40, 40]
     pidx.death_area = 2.5
     pidx.integ_limit = [-10, 10]
 
     pidy = LaserPitchControl(clt, P, I, D)
-    pidy.out_limit = [-100, 100]
+    pidy.out_limit = [-40, 40]
     pidy.death_area = 2.5
     pidy.integ_limit = [-10, 10]
 
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     os.system("stop-gst-camera.sh > nul 2> nul")
 
     print("auto tuning ISO...")
-    sc.autoISO(peek_thresh=1000)
+    sc.autoISO(peek_thresh=1000, p=0.2)
     print("current ISO: {}".format(sc.iso))
 
     time.sleep(1)
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
     print("starting control and debuging")
     ctrl.start()
-    time.sleep(3)
+    time.sleep(2)
 
     clt.moveToAng(*ang)
     time.sleep(2)
@@ -315,6 +315,19 @@ if __name__ == '__main__':
             else:
                 print("\n> moving to spot {}".format((-10, -10)))
                 ctrl.move(-10, -10)
+
+            time.sleep(0.1)
+            cnt = 0
+            while cnt < 10:
+                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
+                    cnt += 1
+                time.sleep(0.1)
+
+            if len(tags) > 2:
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[2]))
+                ctrl.move(*tags[2])
+            else:
+                continue
 
             time.sleep(0.1)
             cnt = 0
