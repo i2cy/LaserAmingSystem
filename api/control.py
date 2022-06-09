@@ -101,7 +101,7 @@ class Control:
             if coord is None:
                 continue
 
-            coord = self.scanner.cvtCdt(coord)
+            # coord = self.scanner.cvtCdt(coord)
 
             if self.verbose:
                 print("\rLaser Beam at ({}, {})   ".format(*coord), end="")
@@ -139,10 +139,10 @@ class Control:
                 time.sleep(delay)
             self.__current_core_time = time.time() - ctl_t0
 
-    def isStable(self, err_max=2):
+    def isStable(self, err_max=1):
         return ctrl.pidX.err < err_max and ctrl.pidY.err < err_max
 
-    def move(self, x, y, wait=True, timeout=0.0, err_max=2, stable_time=0.5):
+    def move(self, x, y, wait=True, timeout=0.0, err_max=1, stable_time=0.8):
         self.pidX.expectation = x
         self.pidY.expectation = y
         if wait:
@@ -236,13 +236,13 @@ if __name__ == '__main__':
     # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-40, 40]
-    pidx.death_area = 2.5
+    pidx.death_area = 1.5
     pidx.integ_limit = [-10, 10]
 
     # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-40, 40]
-    pidy.death_area = 2.5
+    pidy.death_area = 1.5
     pidy.integ_limit = [-10, 10]
 
     # 初始化摄像头采集管道
@@ -314,9 +314,12 @@ if __name__ == '__main__':
         sc.readROI()
         t = sc.scanTags()
         tags = []
+        tag_loc = []
         for ele in t:
             tags.append((ele[0], -ele[1]))
-        print("tags scanned:\n{}".format(tags))
+            loc = sc.cvtCdt(ele)
+            tag_loc.append((loc[0], -loc[1]))
+        print("tags scanned:\n{}".format(tag_loc))
     except Exception as err:
         print("failed to read tags,", err)
 
@@ -330,19 +333,29 @@ if __name__ == '__main__':
     pidx.start()
     pidy.start()
 
-    # 移动到视野中心点
+    # 移动到靶面中心点
     print("\n> moving to center spot")
     try:
-        ctrl.move(*sc.cvtCdt((0, 0)), timeout=TIMEOUT)
+        ctrl.move((0, 0), timeout=TIMEOUT)
     except Exception as err:
         clt.moveToAng(80, 0)
 
     # 依次移动到标靶4角以内的区域
-    if sc.roi is not None:
+    if False and sc.roi is not None:
+        crop = 3
         try:
             for x, y in sc.target_cords:
-                ctrl.move(*sc.cvtCdt((x, y)), timeout=TIMEOUT)
-            ctrl.move(*sc.cvtCdt((0, 0)), timeout=TIMEOUT)
+                if x < 0:
+                    x += crop
+                else:
+                    x -= crop
+                if y < 0:
+                    y += crop
+                else:
+                    y -= crop
+
+                ctrl.move(x, -y, timeout=TIMEOUT)
+            ctrl.move(0, 0, timeout=TIMEOUT)
         except Exception as err:
             print("failed: timeout")
             clt.moveToAng(80, 0)
@@ -357,24 +370,24 @@ if __name__ == '__main__':
     try:
         for ele in range(2):
             if len(tags) >= 1:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[0])))
-                ctrl.move(*sc.cvtCdt(tags[0]), timeout=TIMEOUT)
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[0]))
+                ctrl.move(*tags[0], timeout=TIMEOUT)
             else:
-                print("\n> moving to spot {}".format(sc.cvtCdt((10, 10))))
-                ctrl.move(*sc.cvtCdt((10, 10)), timeout=TIMEOUT)
+                print("\n> moving to spot {}".format((10, 10)))
+                ctrl.move(10, 10, timeout=TIMEOUT)
             locations.append(clt.getDist())
 
             if len(tags) > 1:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[1])))
-                ctrl.move(*sc.cvtCdt(tags[1]), timeout=TIMEOUT)
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
+                ctrl.move(*tags[1], timeout=TIMEOUT)
             else:
-                print("\n> moving to spot {}".format(sc.cvtCdt((-10, -10))))
-                ctrl.move(*sc.cvtCdt((-10, -10)), timeout=TIMEOUT)
+                print("\n> moving to spot {}".format((-10, -10)))
+                ctrl.move(*(-10, -10), timeout=TIMEOUT)
             locations.append(clt.getDist())
 
             if len(tags) > 2:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[2])))
-                ctrl.move(*sc.cvtCdt(tags[2]), timeout=TIMEOUT)
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[2]))
+                ctrl.move(*tags[2], timeout=TIMEOUT)
                 locations.append(clt.getDist())
 
     except (KeyboardInterrupt, Exception) as err:
@@ -387,7 +400,7 @@ if __name__ == '__main__':
     # 定点移动
     for ct in range(2):
         for i, ele in enumerate(locations):
-            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.1)
+            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.4)
             time.sleep(0.3)
 
     # 结束测试（安全退出）

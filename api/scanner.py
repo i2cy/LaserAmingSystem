@@ -385,12 +385,12 @@ class Scanner:
 
     def cvtCdt(self, dotpos):
         if self.roi is not None:
-            magnification = (self.target_cords[3][1] - self.target_cords[0][1]) // \
+            magnification = (self.target_cords[3][1] - self.target_cords[0][1]) / \
                             (self.target_cords[3][0] - self.target_cords[0][0])
-            relative_length = (self.target_cords[2][0] - self.target_cords[3][0]) - dotpos[1] // magnification
-            relative_pos = dotpos[0] - dotpos[1] // magnification
-            actual_pos_x = 50 * relative_pos // relative_length
-            actual_pos_y = 50 * dotpos[1] // (self.target_cords[2][0] - self.target_cords[3][0])
+            relative_length = (self.target_cords[2][0] - self.target_cords[3][0]) - dotpos[1] / magnification
+            relative_pos = dotpos[0] - dotpos[1] / magnification
+            actual_pos_x = 50 * relative_pos / relative_length
+            actual_pos_y = 50 * dotpos[1] / (self.target_cords[2][0] - self.target_cords[3][0])
             coordinate_res = [actual_pos_x, actual_pos_y]
             self.act_laser_pos = coordinate_res
             return coordinate_res
