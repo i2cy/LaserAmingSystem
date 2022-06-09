@@ -380,8 +380,15 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, Exception) as err:
         print("test exited: {}".format(err))
 
-    # 定点移动
+    # 关闭XY方向PID控制器
+    pidx.pause()
+    pidy.pause()
 
+    # 定点移动
+    for ct in range(2):
+        for i, ele in enumerate(locations):
+            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.1)
+            time.sleep(0.3)
 
     # 结束测试（安全退出）
     ctrl.stopDebug()
