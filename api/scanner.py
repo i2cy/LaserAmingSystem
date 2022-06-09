@@ -149,8 +149,8 @@ class Scanner:
         flag, frame = self.cap.read()
 
         a = self.roi[0] - offset
-        b = self.roi[1] + offset
-        c = self.roi[2] - offset
+        b = self.roi[1] - offset
+        c = self.roi[2] + offset
         d = self.roi[3] + offset
 
         if a < 0:
