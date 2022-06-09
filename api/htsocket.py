@@ -153,6 +153,13 @@ class PTControl(HTSocket):
         self.speed_pitch = speed_pitch
         self.speed_yaw = speed_yaw
 
+    def smoothMoveToDist(self, start, to, dots=100, delay=0.02):
+        x = np.linspace(start[0], to[0], dots)
+        y = np.linspace(start[1], to[1], dots)
+        for i, val in enumerate(x):
+            self.moveToDist(val, y[i])
+            time.sleep(delay)
+
 
 def move(clt, pitch, yaw):
     assert isinstance(clt, PTControl)

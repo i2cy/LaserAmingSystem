@@ -217,7 +217,7 @@ class LaserPitchControl(PID):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    TEST_TIME = 6
+    TIMEOUT = 4
 
     print("initializing")
 
@@ -333,7 +333,7 @@ if __name__ == '__main__':
     # 移动到视野中心点
     print("\n> moving to center spot")
     try:
-        ctrl.move(*sc.cvtCdt((0, 0)), timeout=4)
+        ctrl.move(*sc.cvtCdt((0, 0)), timeout=TIMEOUT)
     except Exception as err:
         clt.moveToAng(80, 0)
 
@@ -341,10 +341,10 @@ if __name__ == '__main__':
     if sc.roi is not None:
         try:
             for x, y in sc.target_cords:
-                ctrl.move(*sc.cvtCdt((x, y)), timeout=4)
-            ctrl.move(*sc.cvtCdt((0, 0)), timeout=4)
+                ctrl.move(*sc.cvtCdt((x, y)), timeout=TIMEOUT)
+            ctrl.move(*sc.cvtCdt((0, 0)), timeout=TIMEOUT)
         except Exception as err:
-            print("failed")
+            print("failed: timeout")
             clt.moveToAng(80, 0)
 
     # 启用日志记录
@@ -353,30 +353,35 @@ if __name__ == '__main__':
 
     # 开始测试
     t0 = time.time()
+    locations = []
     try:
-        for ele in range(4):
+        for ele in range(2):
             if len(tags) >= 1:
                 print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[0])))
-                ctrl.move(*sc.cvtCdt(tags[0]))
+                ctrl.move(*sc.cvtCdt(tags[0]), timeout=TIMEOUT)
             else:
                 print("\n> moving to spot {}".format(sc.cvtCdt((10, 10))))
-                ctrl.move(*sc.cvtCdt((10, 10)))
+                ctrl.move(*sc.cvtCdt((10, 10)), timeout=TIMEOUT)
+            locations.append(clt.getDist())
 
             if len(tags) > 1:
                 print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[1])))
-                ctrl.move(*sc.cvtCdt(tags[1]))
+                ctrl.move(*sc.cvtCdt(tags[1]), timeout=TIMEOUT)
             else:
                 print("\n> moving to spot {}".format(sc.cvtCdt((-10, -10))))
-                ctrl.move(*sc.cvtCdt((-10, -10)))
+                ctrl.move(*sc.cvtCdt((-10, -10)), timeout=TIMEOUT)
+            locations.append(clt.getDist())
 
             if len(tags) > 2:
                 print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[2])))
-                ctrl.move(*sc.cvtCdt(tags[2]))
-            else:
-                continue
+                ctrl.move(*sc.cvtCdt(tags[2]), timeout=TIMEOUT)
+                locations.append(clt.getDist())
 
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, Exception) as err:
+        print("test exited: {}".format(err))
+
+    # 定点移动
+
 
     # 结束测试（安全退出）
     ctrl.stopDebug()
