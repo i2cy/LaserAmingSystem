@@ -97,10 +97,11 @@ class Control:
             except:
                 self.scanner.readFrame()
             coord = self.scanner.scanLaser(*self.laser_args)
-            coord = self.scanner.cvtCdt(coord)
 
             if coord is None:
                 continue
+
+            coord = self.scanner.cvtCdt(coord)
 
             if self.verbose:
                 print("\rLaser Beam at ({}, {})   ".format(*coord), end="")
@@ -145,7 +146,10 @@ class Control:
         self.pidX.expectation = x
         self.pidY.expectation = y
         if wait:
-            time.sleep(0.1)
+            cnt = 0
+            while self.isStable(err_max) and cnt < stable_time * 60:
+                cnt += 1
+                time.sleep(0.05)
             t0 = time.time()
             cnt = 0
             while cnt < stable_time * 20:
@@ -328,13 +332,20 @@ if __name__ == '__main__':
 
     # 移动到视野中心点
     print("\n> moving to center spot")
-    ctrl.move(0, 0)
+    try:
+        ctrl.move(*sc.cvtCdt((0, 0)), timeout=4)
+    except Exception as err:
+        clt.moveToAng(80, 0)
 
     # 依次移动到标靶4角以内的区域
     if sc.roi is not None:
-        for x, y in sc.target_cords:
-            ctrl.move(x, y)
-        ctrl.move(0, 0)
+        try:
+            for x, y in sc.target_cords:
+                ctrl.move(*sc.cvtCdt((x, y)), timeout=4)
+            ctrl.move(*sc.cvtCdt((0, 0)), timeout=4)
+        except Exception as err:
+            print("failed")
+            clt.moveToAng(80, 0)
 
     # 启用日志记录
     print("recording")
@@ -345,22 +356,22 @@ if __name__ == '__main__':
     try:
         for ele in range(4):
             if len(tags) >= 1:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[0]))
-                ctrl.move(*tags[0])
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[0])))
+                ctrl.move(*sc.cvtCdt(tags[0]))
             else:
-                print("\n> moving to spot {}".format((10, 10)))
-                ctrl.move(10, 10)
+                print("\n> moving to spot {}".format(sc.cvtCdt((10, 10))))
+                ctrl.move(*sc.cvtCdt((10, 10)))
 
             if len(tags) > 1:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
-                ctrl.move(*tags[1])
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[1])))
+                ctrl.move(*sc.cvtCdt(tags[1]))
             else:
-                print("\n> moving to spot {}".format((-10, -10)))
-                ctrl.move(-10, -10)
+                print("\n> moving to spot {}".format(sc.cvtCdt((-10, -10))))
+                ctrl.move(*sc.cvtCdt((-10, -10)))
 
             if len(tags) > 2:
-                print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[2]))
-                ctrl.move(*tags[2])
+                print("\n> moving to spot ({:.1f}, {:.1f})".format(*sc.cvtCdt(tags[2])))
+                ctrl.move(*sc.cvtCdt(tags[2]))
             else:
                 continue
 
