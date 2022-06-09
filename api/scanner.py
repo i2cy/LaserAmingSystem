@@ -115,6 +115,7 @@ class Scanner:
 
         :param pipe: CameraPipe object or VideoCapture object
         """
+        self.act_laser_pos = None
         assert isinstance(pipe, CameraPipe) or isinstance(pipe, cv2.VideoCapture)
         self.cap = pipe
         flag, frame = self.cap.read()
@@ -251,7 +252,7 @@ class Scanner:
                 if area_H > cv2.contourArea(c) > area_L:
                     cv2.drawContours(self.frame, c, -1, (255, 0, 0), 2)
                     peri = cv2.arcLength(c, True)
-                    approx = cv2.approxPolyDP(c, 0.1 * peri, True)
+                    approx = cv2.approxPolyDP(c, 0.08 * peri, True)
                     # 凸四边形判定
                     if (len(approx) == 4) & (not cv2.isContourConvex(c)):
                         # cv2.drawContours(self.frame, c, -1, (0, 255, 0), 2)
@@ -381,6 +382,20 @@ class Scanner:
                 center = [center_roi[0] - self.cap.frame_size[0] / 2,
                           center_roi[1] - self.cap.frame_size[1] / 2]
             return center
+
+    def cvtCdt(self, dotpos):
+        if self.roi is not None:
+            magnification = (self.target_cords[3][1] - self.target_cords[0][1]) // \
+                            (self.target_cords[3][0] - self.target_cords[0][0])
+            relative_length = (self.target_cords[2][0] - self.target_cords[3][0]) - dotpos[1] // magnification
+            relative_pos = dotpos[0] - dotpos[1] // magnification
+            actual_pos_x = 50 * relative_pos // relative_length
+            actual_pos_y = 50 * dotpos[1] // (self.target_cords[2][0] - self.target_cords[3][0])
+            coordinate_res = [actual_pos_x, actual_pos_y]
+            self.act_laser_pos = coordinate_res
+            return coordinate_res
+        else:
+            return dotpos
 
     def pnpSolve(self):
         if self.roi is None:

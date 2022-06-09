@@ -97,6 +97,7 @@ class Control:
             except:
                 self.scanner.readFrame()
             coord = self.scanner.scanLaser(*self.laser_args)
+            coord = self.scanner.cvtCdt(coord)
 
             if coord is None:
                 continue
