@@ -135,7 +135,7 @@ class Scanner:
 
         return self.frame
 
-    def readROI(self, offset=0):
+    def readROI(self):
         """
         get clipped ROI area from buffer
 
@@ -147,27 +147,12 @@ class Scanner:
         while self.frame is None:
             self.readFrame()
         flag, frame = self.cap.read()
-
-        a = self.roi[0] - offset
-        b = self.roi[1] - offset
-        c = self.roi[2] + offset
-        d = self.roi[3] + offset
-
-        if a < 0:
-            a = 0
-        if b < 0:
-            b = 0
-        if c > self.cap.frame_size[1]:
-            c = self.cap.frame_size[1]
-        if d > self.cap.frame_size[0]:
-            d = self.cap.frame_size[0]
-
-        self.frame = frame[b:d, a:c]
+        self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
     def autoISO(self, exp=130, dead_zone=15, p=0.1, window=11, skip=20,
-                smooth_window=7, peek_thresh=900, verbose=True):
+                smooth_window=7, peek_thresh=900):
         """
             auto adjust camera ISO
             return: int     error
@@ -191,6 +176,8 @@ class Scanner:
             isoarea = self.frame[
                       self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, 0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
+            hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
+
             gray = cv2.GaussianBlur(gray, (smooth_window, smooth_window), 0)
             smoothed, bins = np.histogram(gray.ravel(), 256, [0, 256])
 
@@ -200,10 +187,9 @@ class Scanner:
             plt.pause(0.1)
             dif = exp - findPeak(smoothed)
 
-            if verbose:
-                print("\rexp: {:.2f}\terr: {:.2f}\tout: {:.2f}   ".format(exp, dif, dif * p), end="")
+            print("exp: {:.2f}\t err: {:.2f}\t out: {:.2f}".format(exp, dif, dif * p))
 
-            if dead_zone > dif > -dead_zone:
+            if dead_zone > dif > 0 - dead_zone:
                 break
             else:
                 add_num = dif * p
@@ -231,12 +217,11 @@ class Scanner:
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         flag, bina = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
 
-        blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
-
         plt.cla()
-        plt.imshow(blurred)
-        plt.pause(2)
+        plt.imshow(bina)
+        plt.pause(0.1)
 
+        blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         # cv2.imshow("mask",edged)
@@ -251,7 +236,7 @@ class Scanner:
                 if area_H > cv2.contourArea(c) > area_L:
                     cv2.drawContours(self.frame, c, -1, (255, 0, 0), 2)
                     peri = cv2.arcLength(c, True)
-                    approx = cv2.approxPolyDP(c, 0.1 * peri, True)
+                    approx = cv2.approxPolyDP(c, 0.08 * peri, True)
                     # 凸四边形判定
                     if (len(approx) == 4) & (not cv2.isContourConvex(c)):
                         # cv2.drawContours(self.frame, c, -1, (0, 255, 0), 2)
@@ -374,6 +359,7 @@ class Scanner:
             # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center_roi = [x + w / 2, y + h / 2]
+            self.cvtCdt(center_roi)
             if self.roi is not None:
                 center = [self.roi[0] + center_roi[0] - self.cap.frame_size[0] / 2,
                           self.roi[1] + center_roi[1] - self.cap.frame_size[1] / 2]
@@ -381,6 +367,20 @@ class Scanner:
                 center = [center_roi[0] - self.cap.frame_size[0] / 2,
                           center_roi[1] - self.cap.frame_size[1] / 2]
             return center
+
+    def cvtCdt(self, dotpos):
+        if roin is not None:
+            magnification = (self.target_cords[3][1] - self.target_cords[0][1]) // (self.target_cords[3][0] - self.target_cords[0][0])
+            relative_length = (self.target_cords[2][0] - self.target_cords[3][0]) - dotpos[1] // magnification
+            relative_pos = dotpos[0] - dotpos[1] // magnification
+            actual_pos_x = 50 * relative_pos // relative_length
+            actual_pos_y = 50 * dotpos[1] // (self.target_cords[2][0] - self.target_cords[3][0])
+            coordinate_res = [actual_pos_x, actual_pos_y]
+            self.act_laser_pos = coordinate_res
+            return coordinate_res
+        else:
+            pass
+
 
     def pnpSolve(self):
         if self.roi is None:
