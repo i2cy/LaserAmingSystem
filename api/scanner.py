@@ -135,7 +135,7 @@ class Scanner:
 
         return self.frame
 
-    def readROI(self):
+    def readROI(self, offset=0):
         """
         get clipped ROI area from buffer
 
@@ -147,12 +147,27 @@ class Scanner:
         while self.frame is None:
             self.readFrame()
         flag, frame = self.cap.read()
-        self.frame = frame[self.roi[1]:self.roi[3], (self.roi[0]):(self.roi[2])]
+
+        a = self.roi[0] - offset
+        b = self.roi[1] + offset
+        c = self.roi[2] - offset
+        d = self.roi[3] + offset
+
+        if a < 0:
+            a = 0
+        if b < 0:
+            b = 0
+        if c > self.cap.frame_size[1]:
+            c = self.cap.frame_size[1]
+        if d > self.cap.frame_size[0]:
+            d = self.cap.frame_size[0]
+
+        self.frame = frame[b:d, a:c]
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
     def autoISO(self, exp=130, dead_zone=15, p=0.1, window=11, skip=20,
-                smooth_window=7, peek_thresh=900):
+                smooth_window=7, peek_thresh=900, verbose=True):
         """
             auto adjust camera ISO
             return: int     error
@@ -176,8 +191,6 @@ class Scanner:
             isoarea = self.frame[
                       self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, 0: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
-            hist, bins = np.histogram(gray.ravel(), 256, [0, 256])
-
             gray = cv2.GaussianBlur(gray, (smooth_window, smooth_window), 0)
             smoothed, bins = np.histogram(gray.ravel(), 256, [0, 256])
 
@@ -187,9 +200,10 @@ class Scanner:
             plt.pause(0.1)
             dif = exp - findPeak(smoothed)
 
-            print("exp: {:.2f}\t err: {:.2f}\t out: {:.2f}".format(exp, dif, dif * p))
+            if verbose:
+                print("\rexp: {:.2f}\terr: {:.2f}\tout: {:.2f}   ".format(exp, dif, dif * p), end="")
 
-            if dead_zone > dif > 0 - dead_zone:
+            if dead_zone > dif > -dead_zone:
                 break
             else:
                 add_num = dif * p
@@ -217,11 +231,12 @@ class Scanner:
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
         flag, bina = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
 
-        plt.cla()
-        plt.imshow(bina)
-        plt.pause(0.1)
-
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
+
+        plt.cla()
+        plt.imshow(blurred)
+        plt.pause(2)
+
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         # cv2.imshow("mask",edged)

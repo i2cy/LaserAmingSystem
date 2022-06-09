@@ -93,7 +93,7 @@ class Control:
         while self.live:
             t0 = time.time()
             try:
-                self.scanner.readROI()
+                self.scanner.readROI(offset=10)
             except:
                 self.scanner.readFrame()
             coord = self.scanner.scanLaser(*self.laser_args)
@@ -137,9 +137,23 @@ class Control:
                 time.sleep(delay)
             self.__current_core_time = time.time() - t0
 
-    def move(self, x, y):
+    def isStable(self, err_max=2):
+        return ctrl.pidX.err < err_max and ctrl.pidY.err < err_max
+
+    def move(self, x, y, wait=True, timeout=0.0, err_max=2, stable_time=0.5):
         self.pidX.expectation = x
         self.pidY.expectation = y
+        if wait:
+            time.sleep(0.1)
+            t0 = time.time()
+            cnt = 0
+            while cnt < stable_time * 20:
+                if timeout:
+                    if time.time() - t0 > timeout:
+                        raise Exception("timeout")
+                if self.isStable(err_max):
+                    cnt += 1
+                time.sleep(0.05)
 
     def targetCenterofCam(self):
         self.pidX.expectation = self.scanner.cap.frame_size[0] / 2
@@ -201,31 +215,41 @@ if __name__ == '__main__':
     TEST_TIME = 6
 
     print("initializing")
+
+    # 修改串口资源权限
     os.system("sudo chmod 777 /dev/ttyS4")
-    clt = PTControl("/dev/ttyS4", 115200, pitch_range=(0, 10000))
+
+    # 初始化HT云台控制接口
+    clt = PTControl("/dev/ttyS4", 115200)
     clt.moveToAng(80, 0)
-    clt.connect()
     ang = clt.getAng()
     clt.moveToAng(0, 0)
 
+    # 启动HT云台控制
+    clt.connect()
+
+    # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-40, 40]
     pidx.death_area = 2.5
     pidx.integ_limit = [-10, 10]
 
+    # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-40, 40]
     pidy.death_area = 2.5
     pidy.integ_limit = [-10, 10]
 
+    # 初始化摄像头采集管道
     cap = CameraPipe((0,), (320, 240), analogue_gain=16, exposure=1660)
     cap.start()
     sc = Scanner(cap)
 
+    # 初始化激光坐标控制系统
     ctrl = Control(pidx, pidy, sc, x_filter=0.4, y_filter=0.4, laser_args=(1, 60, 220))
 
-    print("waiting for camera pipe line to be ready")
-
+    # 等待摄像头采集管道就绪
+    print("waiting for camera pipe line to be ready...")
     fps = cap.getFPS()
     cnt = 0
     while fps < 10 and cnt < 6:
@@ -236,25 +260,32 @@ if __name__ == '__main__':
         time.sleep(0.5)
     print("")
 
+    # 使用rkisp让相机自动曝光一次
     print("reinitializing camera arguments with gst-launcher")
-    os.system("gst-camera.sh > nul 2> nul")
-    time.sleep(4)
-    os.system("stop-gst-camera.sh > nul 2> nul")
+    os.system("gst-camera.sh >nul 2>nul")
+    time.sleep(3)
+    os.system("stop-gst-camera.sh >nul 2>nul")
 
+    # 将相机ISO调至最低
+    cap.setCamArgs(analogue_gain=16)
+    time.sleep(2)
+
+    # 自动调节相机ISO
     print("auto tuning ISO...")
-    sc.autoISO(peek_thresh=1000, p=0.2)
-    print("current ISO: {}".format(sc.iso))
-
+    sc.autoISO(exp=130, peek_thresh=1000, p=0.15, smooth_window=5)
+    print("\ncurrent ISO: {}".format(sc.iso))
     time.sleep(1)
 
+    # 预览图象
     while sc.frame is None:
         sc.readFrame()
-    plt.imshow(cv2.cvtColor(sc.frame, cv2.COLOR_BGR2RGB))
+    plt.cla()
+    plt.imshow(sc.frame)
     plt.pause(2)
     plt.close(1)
 
+    # 扫描标靶获得ROI
     print("scanning target surface")
-
     while sc.roi is None:
         try:
             sc.readFrame()
@@ -263,8 +294,17 @@ if __name__ == '__main__':
             break
     print("ROI:", sc.roi)
 
-    tags = []
+    # 预览ROI
+    time.sleep(0.5)
+    if sc.roi is not None:
+        sc.readROI(offset=10)
+        plt.cla()
+        plt.imshow(sc.frame)
+        plt.pause(2)
+        plt.close(1)
 
+    # 扫描标记
+    tags = []
     try:
         sc.readROI()
         t = sc.scanTags()
@@ -275,24 +315,32 @@ if __name__ == '__main__':
     except Exception as err:
         print("failed to read tags,", err)
 
+    # 启动激光坐标控制系统
     print("starting control and debuging")
     ctrl.start()
-    time.sleep(2)
 
+    # 启动XY方向PID控制器
     clt.moveToAng(*ang)
     time.sleep(2)
     pidx.start()
     pidy.start()
 
+    # 移动到视野中心点
     print("\n> moving to center spot")
     ctrl.move(0, 0)
-    time.sleep(TEST_TIME / 2)
 
-    print("\nrecording")
+    # 依次移动到标靶4角以内的区域
+    if sc.roi is not None:
+        for x, y in sc.target_cords:
+            ctrl.move(x, y)
+        ctrl.move(0, 0)
+
+    # 启用日志记录
+    print("recording")
     ctrl.startDebug()
 
+    # 开始测试
     t0 = time.time()
-
     try:
         for ele in range(4):
             if len(tags) >= 1:
@@ -302,13 +350,6 @@ if __name__ == '__main__':
                 print("\n> moving to spot {}".format((10, 10)))
                 ctrl.move(10, 10)
 
-            time.sleep(0.1)
-            cnt = 0
-            while cnt < 10:
-                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
-                    cnt += 1
-                time.sleep(0.1)
-
             if len(tags) > 1:
                 print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[1]))
                 ctrl.move(*tags[1])
@@ -316,38 +357,26 @@ if __name__ == '__main__':
                 print("\n> moving to spot {}".format((-10, -10)))
                 ctrl.move(-10, -10)
 
-            time.sleep(0.1)
-            cnt = 0
-            while cnt < 10:
-                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
-                    cnt += 1
-                time.sleep(0.1)
-
             if len(tags) > 2:
                 print("\n> moving to spot ({:.1f}, {:.1f})".format(*tags[2]))
                 ctrl.move(*tags[2])
             else:
                 continue
 
-            time.sleep(0.1)
-            cnt = 0
-            while cnt < 10:
-                if ctrl.pidX.err < 2 and ctrl.pidY.err < 2:
-                    cnt += 1
-                time.sleep(0.1)
     except KeyboardInterrupt:
         pass
 
+    # 结束测试（安全退出）
     ctrl.stopDebug()
     ctrl.stop()
     pidx.pause()
     pidy.pause()
     clt.close()
     cap.stop()
-
     print("")
     print("test end")
 
+    # 绘制X方向PID采样数据
     x = np.linspace(0, time.time() - t0, len(ctrl.x_out))
     plt.subplot(211)
     plt.title("X")
@@ -356,11 +385,11 @@ if __name__ == '__main__':
     plt.plot(x, ctrl.x_out, color="r")
     plt.legend("EMO")
 
+    # 绘制Y方向PID采样数据
     plt.subplot(212)
     plt.title("Y")
     plt.plot(x, ctrl.y_exp, color="g")
     plt.plot(x, ctrl.y_mea, color="b")
     plt.plot(x, ctrl.y_out, color="r")
     plt.legend("EMO")
-
     plt.show()

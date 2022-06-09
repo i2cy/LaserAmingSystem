@@ -20,7 +20,7 @@ CENTER = (1070, 5150)
 class PTControl(HTSocket):
 
     def __init__(self, port, baud_rate, ctl_freq=50, center=(800, 5150), speed_dead_zone=(-20, 20),
-                 pitch_range=(800, 5400), yaw_range=(3750, 6750),
+                 pitch_range=(820, 5400), yaw_range=(3750, 6750),
                  yaw_90=5000, pitch_90=4600, pitch_center=5300, distance_cm=100):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
