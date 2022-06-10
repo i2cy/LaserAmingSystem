@@ -340,6 +340,9 @@ if __name__ == '__main__':
     except Exception as err:
         clt.moveToAng(80, 0)
 
+    # 等待输入
+    input("\npress ENTER to continue")
+
     # 启用日志记录
     print("recording")
     ctrl.startDebug()
