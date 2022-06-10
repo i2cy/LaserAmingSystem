@@ -274,6 +274,7 @@ class Scanner:
                         # cv2.drawContours(self.frame,[box],0,(0,0,255),2)
                         shapepoint = approx
                         self.target_cords = np.squeeze(approx)
+                        self.target_cords_LU = self.target_cords
                         arr_t = self.target_cords.copy()
                         arr_t2 = self.target_cords.copy()
                         assert isinstance(arr_t, np.ndarray)
@@ -385,12 +386,12 @@ class Scanner:
 
     def cvtCdt(self, dotpos):
         if self.roi is not None:
-            magnification = (self.target_cords[3][1] - self.target_cords[0][1]) / \
-                            (self.target_cords[3][0] - self.target_cords[0][0])
-            relative_length = (self.target_cords[2][0] - self.target_cords[3][0]) - dotpos[1] / magnification
-            relative_pos = dotpos[0] - dotpos[1] / magnification
-            actual_pos_x = 50 * relative_pos / relative_length
-            actual_pos_y = 50 * dotpos[1] / (self.target_cords[2][0] - self.target_cords[3][0])
+            magnification = (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[3][0] - self.targrt_cords_LU[0][0])
+            relative_length = (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0]) - dotpos[1] / magnification
+            relative_pos_x = dotpos[0] - dotpos[1] / magnification
+            actual_pos_x = 50 * relative_pos_x / relative_length
+            relative_pos_y = 50 * dotpos[1] / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
+            actual_pos_y = relative_pos_y * (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
             coordinate_res = [actual_pos_x, actual_pos_y]
             self.act_laser_pos = coordinate_res
             return coordinate_res
