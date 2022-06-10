@@ -21,7 +21,7 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (1.24, 0.01, 0.14)  # initial tuned values
+P, I, D = (1.24, 0, 0.14)  # initial tuned values
 
 
 class Control:
@@ -226,9 +226,10 @@ if __name__ == '__main__':
 
     # 初始化HT云台控制接口
     clt = PTControl("/dev/ttyS4", 115200)
-    clt.moveToAng(80, 0)
+    clt.moveToAng(70, 0)
     ang = clt.getAng()
     clt.moveToAng(0, 0)
+    center = (0, 0)
 
     # 启动HT云台控制
     clt.connect()
@@ -236,13 +237,13 @@ if __name__ == '__main__':
     # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-40, 40]
-    pidx.death_area = 1.5
+    pidx.death_area = 2
     pidx.integ_limit = [-10, 10]
 
     # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-40, 40]
-    pidy.death_area = 1.5
+    pidy.death_area = 2
     pidy.integ_limit = [-10, 10]
 
     # 初始化摄像头采集管道
@@ -267,17 +268,17 @@ if __name__ == '__main__':
 
     # 使用rkisp让相机自动曝光一次
     print("reinitializing camera arguments with gst-launcher")
-    os.system("gst-camera.sh >nul 2>nul")
+    os.system("gst-camera.sh >/dev/null 2>/dev/null")
     time.sleep(3)
-    os.system("stop-gst-camera.sh >nul 2>nul")
+    os.system("stop-gst-camera.sh >/dev/null 2>/dev/null")
 
     # 将相机ISO调至最低
     cap.setCamArgs(analogue_gain=16)
-    time.sleep(2)
+    time.sleep(1)
 
     # 自动调节相机ISO
     print("auto tuning ISO...")
-    sc.autoISO(exp=130, peek_thresh=1000, p=0.15, smooth_window=5)
+    sc.autoISO(exp=140, peek_thresh=1000, p=0.15, smooth_window=5)
     print("\ncurrent ISO: {}".format(sc.iso))
     time.sleep(1)
 
@@ -327,8 +328,15 @@ if __name__ == '__main__':
     print("starting control and debuging")
     ctrl.start()
 
+    # 自动调节相机ISO
+    #print("auto tuning ISO...")
+    #sc.autoISO(exp=130, peek_thresh=1000, p=0.15, smooth_window=5)
+    #print("\ncurrent ISO: {}".format(sc.iso))
+    #time.sleep(1)
+
     # 启动XY方向PID控制器
     clt.moveToAng(*ang)
+    center_loc = clt.getDist()
     time.sleep(2)
     pidx.start()
     pidy.start()
@@ -336,9 +344,16 @@ if __name__ == '__main__':
     # 移动到靶面中心点
     print("\n> moving to center spot")
     try:
-        ctrl.move((0, 0), timeout=TIMEOUT)
-    except Exception as err:
-        clt.moveToAng(80, 0)
+        x, y = sc.getTargetCenter()
+        print("center point: ({:.2f}, {:.2f})".format(float(x), float(y)))
+        ctrl.move(x, -y, timeout=TIMEOUT)
+        input("\npress ENTER to continue\n")
+        center = (x, -y)
+        center_loc = clt.getDist()
+        print("\ncenter dist location:", center_loc)
+    except (Exception, KeyboardInterrupt) as err:
+        print("exited: {}".format(err))
+        clt.moveToDist(*center_loc)
 
     # 依次移动到标靶4角以内的区域
     if False and sc.roi is not None:
@@ -355,7 +370,7 @@ if __name__ == '__main__':
                     y -= crop
 
                 ctrl.move(x, -y, timeout=TIMEOUT)
-            ctrl.move(0, 0, timeout=TIMEOUT)
+            clt.moveToDist(*center_loc)
         except Exception as err:
             print("failed: timeout")
             clt.moveToAng(80, 0)
@@ -396,12 +411,31 @@ if __name__ == '__main__':
     # 关闭XY方向PID控制器
     pidx.pause()
     pidy.pause()
+    clt.moveToDist(*center_loc)
+    time.sleep(0.5)
 
     # 定点移动
     for ct in range(2):
         for i, ele in enumerate(locations):
-            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.4)
+            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.85)
             time.sleep(0.3)
+
+    # 启动XY方向PID控制器
+    # pidx.start()
+    # pidy.start()
+    # time.sleep(0.5)
+
+    # ctrl.move(center)
+    # time.sleep(0.5)
+
+    # 画圆
+    clt.moveToDist(*center_loc)
+    time.sleep(0.5)
+    for i in range(3):
+        clt.smoothDrawCircle(center_loc, 7*(i+1), accuracy=2, delay=0.02)
+    time.sleep(0.5)
+    clt.moveToDist(*center_loc)
+    time.sleep(0.5)
 
     # 结束测试（安全退出）
     ctrl.stopDebug()

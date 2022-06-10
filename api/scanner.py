@@ -115,7 +115,6 @@ class Scanner:
 
         :param pipe: CameraPipe object or VideoCapture object
         """
-        self.act_laser_pos = None
         assert isinstance(pipe, CameraPipe) or isinstance(pipe, cv2.VideoCapture)
         self.cap = pipe
         flag, frame = self.cap.read()
@@ -310,7 +309,7 @@ class Scanner:
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
         centers = []
-        paperCnt = None
+
         if len(contours) > 0:
             # 按轮廓面积降序排列
             contours = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -382,6 +381,30 @@ class Scanner:
                 center = [center_roi[0] - self.cap.frame_size[0] / 2,
                           center_roi[1] - self.cap.frame_size[1] / 2]
             return center
+
+    def getTargetCenter(self):
+        def calc_abc_from_line_2d(x0, y0, x1, y1):
+            a = y0 - y1
+            b = x1 - x0
+            c = x0 * y1 - x1 * y0
+            return a, b, c
+
+        def get_line_cross_point(line1, line2):
+            # x1y1x2y2
+            a0, b0, c0 = calc_abc_from_line_2d(*line1)
+            a1, b1, c1 = calc_abc_from_line_2d(*line2)
+            D = a0 * b1 - a1 * b0
+            if D == 0:
+                return None
+            x = (b0 * c1 - b1 * c0) / D
+            y = (a1 * c0 - a0 * c1) / D
+            # print(x, y)
+            return x, y
+
+        line1 = (*self.target_cords[0], *self.target_cords[2])
+        line2 = (*self.target_cords[1], *self.target_cords[3])
+
+        return get_line_cross_point(line1, line2)
 
     def cvtCdt(self, dotpos):
         if self.roi is not None:

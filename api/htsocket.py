@@ -21,7 +21,7 @@ class PTControl(HTSocket):
 
     def __init__(self, port, baud_rate, ctl_freq=50, center=(800, 5150), speed_dead_zone=(-20, 20),
                  pitch_range=(820, 5400), yaw_range=(3750, 6750),
-                 yaw_90=5000, pitch_90=4600, pitch_center=5300, distance_cm=100):
+                 yaw_90=5000, pitch_90=4700, pitch_center=5180, distance_cm=100):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
         self.dead_zone = speed_dead_zone
@@ -160,6 +160,20 @@ class PTControl(HTSocket):
         y = np.linspace(start[1], to[1], dots)
         for i, val in enumerate(x):
             self.moveToDist(val, y[i])
+            time.sleep(delay)
+
+    def smoothDrawCircle(self, center, r_cm, accuracy=1, delay=0.02):
+        x0, y0 = center
+        length_circle = 2 * np.pi * r_cm
+        dots = int(length_circle * accuracy)
+        x1 = np.linspace(0, 2 * np.pi, dots)
+        y1 = x1.copy()
+
+        x = r_cm * np.cos(x1) + x0
+        y = r_cm * np.sin(y1) + y0
+
+        for i, xi in enumerate(x):
+            self.moveToDist(xi, y[i])
             time.sleep(delay)
 
 
