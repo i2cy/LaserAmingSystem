@@ -399,8 +399,9 @@ class Scanner:
             relative_length = (self.target_cords[1][0] - self.target_cords[0][0]) - 2 * (dotpos[1] - self.target_cords[0][1]) / magnification
             relative_pos_x = dotpos[0] - self.target_cords[0][0] + (dotpos[1] -self.target_cords[0][1]) / magnification
             actual_pos_x = 50 * relative_pos_x / relative_length
-            relative_pos_y = (dotpos[1] - self.target_cords[0][1]) * (self.target_cords[3][1] - self.target_cords[0][1]) / (self.target_cords[3][1] - self.target_cords[0][1])
-            actual_pos_y = 50 * relative_pos_y / relative_length            # (self.target_cords[3][1] - self.target_cords[0][1])
+            actual_pos_y = (dotpos[1] - self.target_cords[0][1])(self.target_cords[3][1] - self.target_cords[0][1])
+            # relative_pos_y = (dotpos[1] - self.target_cords[0][1]) * (self.target_cords[3][1] - self.target_cords[0][1]) / (self.target_cords[3][1] - self.target_cords[0][1])
+            # actual_pos_y = 50 * relative_pos_y / relative_length            # (self.target_cords[3][1] - self.target_cords[0][1])
             coordinate_res = [actual_pos_x, actual_pos_y]
             return coordinate_res
         else:
