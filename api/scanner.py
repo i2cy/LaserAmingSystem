@@ -387,7 +387,6 @@ class Scanner:
     def cvtCdt(self, dotpos):
 
         """
-
             func: Enter the roi coordinates, return the corrected target coordinates, and add them to self.act_laser_pos
         """
         if self.roi is not None:
@@ -403,12 +402,18 @@ class Scanner:
         else:
             return dotpos
 
-    @staticmethod()
-    def cvtCdt_ROI2Center(ROIpos):
-        x = ROIpos[0] - 25
-        y = (50 - ROIpos[1]) - 25
-        return [x, y]
-
+    def cvtCdt_ROI2Center(self,actPos):
+        
+        magnification = (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[3][0] - self.targrt_cords_LU[0][0])
+        px_y = ((self.target_cords_LU[2][0] - self.target_cords_LU[3][0]) / 50) * (self.target_cords_LU[3][1] actPos[1]) / magnification
+        px_x = (px_y / magnification) + (self.target_cords_LU[2][0] - self.target_cords_LU[3][0] - 2 * px_y / magnification) * actPos[0] / 50
+        roi_x = int(px_x) + self.target_cords_LU[3][0]
+        roi_y = self.target_cords_LU[3][1] - int(px_y)
+        center_x = roi_x - self.cap.frame_size[0] / 2
+        center_y = roi_y - self.cap.frame_size[1] / 2
+        centerPos = [center_x, center_y]
+        return(centerPos)
+        
     def pnpSolve(self):
         if self.roi is None:
             self.scanTargetSurface()
