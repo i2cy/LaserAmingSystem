@@ -114,7 +114,7 @@ class Control:
             if not y_mea:
                 x_mea = (x_lpf - x_dlpf) + x_lpf
 
-            y_mea = -y_mea
+            # y_mea = -y_mea  # 将y轴反转
 
             x_lpf += self.x_filter * (x_mea - x_lpf)
             x_dlpf += self.x_filter * (x_lpf - x_dlpf)
@@ -312,13 +312,10 @@ if __name__ == '__main__':
     tags = []
     try:
         sc.readROI()
-        t = sc.scanTags()
-        tags = []
+        tags, t = sc.scanTags()
         tag_loc = []
         for ele in t:
-            tags.append((ele[0], -ele[1]))
-            loc = sc.cvtCdt(ele)
-            tag_loc.append((loc[0], -loc[1]))
+            tag_loc.append((ele[0], ele[1]))
         print("tags scanned:\n{}".format(tag_loc))
     except Exception as err:
         print("failed to read tags,", err)
@@ -336,29 +333,10 @@ if __name__ == '__main__':
     # 移动到靶面中心点
     print("\n> moving to center spot")
     try:
-        ctrl.move((0, 0), timeout=TIMEOUT)
+        ctrl.move(*(0, 0), timeout=TIMEOUT)
+        time.sleep(1)
     except Exception as err:
         clt.moveToAng(80, 0)
-
-    # 依次移动到标靶4角以内的区域
-    if False and sc.roi is not None:
-        crop = 3
-        try:
-            for x, y in sc.target_cords:
-                if x < 0:
-                    x += crop
-                else:
-                    x -= crop
-                if y < 0:
-                    y += crop
-                else:
-                    y -= crop
-
-                ctrl.move(x, -y, timeout=TIMEOUT)
-            ctrl.move(0, 0, timeout=TIMEOUT)
-        except Exception as err:
-            print("failed: timeout")
-            clt.moveToAng(80, 0)
 
     # 启用日志记录
     print("recording")

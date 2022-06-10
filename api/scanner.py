@@ -115,7 +115,7 @@ class Scanner:
 
         :param pipe: CameraPipe object or VideoCapture object
         """
-        self.act_laser_pos = None
+        self.target_cords_LU = None
         assert isinstance(pipe, CameraPipe) or isinstance(pipe, cv2.VideoCapture)
         self.cap = pipe
         flag, frame = self.cap.read()
@@ -123,7 +123,6 @@ class Scanner:
         self.roi = None
         self.target_cords = None
         self.iso = 40
-        self.act_laser_pos = []
 
     def readFrame(self):
         """
@@ -312,6 +311,7 @@ class Scanner:
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
         centers = []
+        fixed_centers = []
         paperCnt = None
         if len(contours) > 0:
             # 按轮廓面积降序排列
@@ -329,7 +329,7 @@ class Scanner:
                     print("ellipse: {:.4f}".format(area / (np.pi * size[0] * size[1] / 4)))
 
                     if (shaperate_H * np.pi * size[0] * size[1] / 4) > area > (shaperate_L * np.pi * size[0] * size[1] / 4):
-                        self.cvtCdt(pos)
+                        fixed_centers.append(self.cvtCdt(pos))
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
                         if self.roi is not None:
                             pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
@@ -338,7 +338,7 @@ class Scanner:
                             pos_newsys = [pos[0] - self.cap.frame_size[0] / 2,
                                           pos[1] - self.cap.frame_size[1] / 2]
                         centers.append(pos_newsys)
-        return centers
+        return centers, fixed_centers
 
     def scanLaser(self, area_L=1, area_H=40, thresh=210):
         """
@@ -377,8 +377,9 @@ class Scanner:
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center_roi = [x + w / 2, y + h / 2]
             if self.roi is not None:
-                center = [self.roi[0] + center_roi[0] - self.cap.frame_size[0] / 2,
-                          self.roi[1] + center_roi[1] - self.cap.frame_size[1] / 2]
+                center_roi = self.cvtCdt(center_roi)
+                center = (center_roi[0] - 25,
+                          center_roi[1] - 25)
             else:
                 center = [center_roi[0] - self.cap.frame_size[0] / 2,
                           center_roi[1] - self.cap.frame_size[1] / 2]
@@ -390,30 +391,34 @@ class Scanner:
             func: Enter the roi coordinates, return the corrected target coordinates, and add them to self.act_laser_pos
         """
         if self.roi is not None:
-            magnification = (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[3][0] - self.targrt_cords_LU[0][0])
-            relative_length = (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0]) - dotpos[1] / magnification
+            magnification = (self.target_cords_LU[3][1] - self.target_cords_LU[0][1]) / \
+                            (self.target_cords_LU[3][0] - self.target_cords_LU[0][0])
+            relative_length = (self.target_cords_LU[2][0] - self.target_cords_LU[3][0]) - dotpos[1] / magnification
             relative_pos_x = dotpos[0] - dotpos[1] / magnification
             actual_pos_x = 50 * relative_pos_x / relative_length
-            relative_pos_y = 50 * dotpos[1] / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
-            actual_pos_y = relative_pos_y * (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
+            relative_pos_y = 50 * dotpos[1] / (self.target_cords_LU[2][0] - self.target_cords_LU[3][0])
+            actual_pos_y = relative_pos_y * (self.target_cords_LU[3][1] - self.target_cords_LU[0][1]) / \
+                           (self.target_cords_LU[2][0] - self.target_cords_LU[3][0])
             coordinate_res = [actual_pos_x, actual_pos_y]
-            self.act_laser_pos.append[coordinate_res]
             return coordinate_res
         else:
             return dotpos
 
     def cvtCdt_ROI2Center(self,actPos):
-        
-        magnification = (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[3][0] - self.targrt_cords_LU[0][0])
-        px_y = ((self.target_cords_LU[2][0] - self.target_cords_LU[3][0]) / 50) * (self.target_cords_LU[3][1] actPos[1]) / magnification
-        px_x = (px_y / magnification) + (self.target_cords_LU[2][0] - self.target_cords_LU[3][0] - 2 * px_y / magnification) * actPos[0] / 50
+
+        magnification = (self.target_cords_LU[3][1] - self.target_cords_LU[0][1]) / \
+                        (self.target_cords_LU[3][0] - self.target_cords_LU[0][0])
+        px_y = ((self.target_cords_LU[2][0] - self.target_cords_LU[3][0]) / 50) * \
+               (self.target_cords_LU[3][1] actPos[1]) / magnification
+        px_x = (px_y / magnification) + \
+               (self.target_cords_LU[2][0] - self.target_cords_LU[3][0] - 2 * px_y / magnification) * actPos[0] / 50
         roi_x = int(px_x) + self.target_cords_LU[3][0]
         roi_y = self.target_cords_LU[3][1] - int(px_y)
         center_x = roi_x - self.cap.frame_size[0] / 2
         center_y = roi_y - self.cap.frame_size[1] / 2
         centerPos = [center_x, center_y]
         return(centerPos)
-        
+
     def pnpSolve(self):
         if self.roi is None:
             self.scanTargetSurface()
