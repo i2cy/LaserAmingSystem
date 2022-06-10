@@ -390,18 +390,18 @@ class Scanner:
             return center
 
     def cvtCdt(self, dotpos):
-
         """
             func: Enter the roi coordinates, return the corrected target coordinates, and add them to self.act_laser_pos
         """
         if self.roi is not None:
             magnification = (self.target_cords[3][1] - self.target_cords[0][1]) / (self.target_cords[3][0] - self.target_cords[0][0])
-            relative_length = (self.target_cords[1][0] - self.target_cords[0][0]) - 2 * (dotpos[1] - self.target_cords[0][1]) / magnification
+            magnification_2 = (self.target_cords[2][1] - self.target_cords[1][1]) / (self.target_cords[2][0] - self.target_cords[1][0])
+            relative_length = (self.target_cords[1][0] - self.target_cords[0][0]) -  (dotpos[1] - self.target_cords[0][1]) / magnification + (dotpos[1] - self.target_cords[0][1]) / magnification_2
             relative_pos_x = dotpos[0] - self.target_cords[0][0] + (dotpos[1] -self.target_cords[0][1]) / magnification
             actual_pos_x = 50 * relative_pos_x / relative_length
-            actual_pos_y = (dotpos[1] - self.target_cords[0][1])(self.target_cords[3][1] - self.target_cords[0][1])
-            # relative_pos_y = (dotpos[1] - self.target_cords[0][1]) * (self.target_cords[3][1] - self.target_cords[0][1]) / (self.target_cords[3][1] - self.target_cords[0][1])
-            # actual_pos_y = 50 * relative_pos_y / relative_length            # (self.target_cords[3][1] - self.target_cords[0][1])
+            # actual_pos_y = (dotpos[1] - self.target_cords[0][1])(self.target_cords[3][1] - self.target_cords[0][1])
+            relative_pos_y = (dotpos[1] - self.target_cords[0][1]) * np.mean([(self.target_cords[1][0],self.target_cords[0][0]),(self.target_cords[2][0] - self.target_cords[3][0])]) / (self.target_cords[3][1] - self.target_cords[0][1])
+            actual_pos_y = 50 * relative_pos_y / (self.target_cords[3][1] - self.target_cords[0][1])
             coordinate_res = [actual_pos_x, actual_pos_y]
             return coordinate_res
         else:
