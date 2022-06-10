@@ -21,7 +21,8 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (1.24, 0.01, 0.14)  # initial tuned values
+# P, I, D = (1.24, 0.01, 0.14)  # initial tuned values
+P, I, D = (2.9, 0.02, 0.3)
 
 
 class Control:
@@ -236,13 +237,13 @@ if __name__ == '__main__':
     # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, P, I, D)
     pidx.out_limit = [-40, 40]
-    pidx.death_area = 1.5
+    pidx.death_area = 0.7
     pidx.integ_limit = [-10, 10]
 
     # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, P, I, D)
     pidy.out_limit = [-40, 40]
-    pidy.death_area = 1.5
+    pidy.death_area = 0.7
     pidy.integ_limit = [-10, 10]
 
     # 初始化摄像头采集管道
@@ -312,10 +313,11 @@ if __name__ == '__main__':
     tags = []
     try:
         sc.readROI()
-        tags, t = sc.scanTags()
+        raw, t = sc.scanTags()
         tag_loc = []
         for ele in t:
             tag_loc.append((ele[0], -ele[1]))
+        tags = tag_loc
         print("tags scanned:\n{}".format(tag_loc))
     except Exception as err:
         print("failed to read tags,", err)
