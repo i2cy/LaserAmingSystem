@@ -240,10 +240,13 @@ class Scanner:
 
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
+
         # cv2.imshow("mask",edged)
         # cv2.waitKey(1)
+
         contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
         shapepoint = None
+
         if len(contours) > 0:
             # 按轮廓面积降序排列
             contours = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -277,8 +280,10 @@ class Scanner:
                         self.target_cords_LU = self.target_cords
                         arr_t = self.target_cords.copy()
                         arr_t2 = self.target_cords.copy()
+
                         assert isinstance(arr_t, np.ndarray)
                         arr_t -= int(arr_t.mean())
+
                         for i, (x1, y1) in enumerate(arr_t):
                             if x1 < 0 and y1 < 0:
                                 ind = 0
@@ -290,6 +295,7 @@ class Scanner:
                                 ind = 3
                             self.target_cords[ind] = (arr_t2[i][0] - self.cap.frame_size[0] / 2,
                                                       arr_t2[i][1] - self.cap.frame_size[1] / 2)
+
                         self.roi = [x, y, x + w, y + h]
                         break
         return shapepoint
@@ -313,12 +319,14 @@ class Scanner:
         centers = []
         fixed_centers = []
         paperCnt = None
+
         if len(contours) > 0:
             # 按轮廓面积降序排列
             contours = sorted(contours, key=cv2.contourArea, reverse=True)
             for cnt in contours:
                 cv2.drawContours(self.frame, cnt, -1, (0, 255, 0), 2)
                 area = cv2.contourArea(cnt)
+
                 if area_H > area > area_L and len(cnt) >= 5:
                     pos, size, ang = cv2.fitEllipse(cnt)
                     # x, y, w, h = cv2.boundingRect(cnt)        # rect boud method_1
@@ -410,7 +418,7 @@ class Scanner:
                                          self.target_cords[3][1] - self.target_cords[0][1])
             actual_pos_y = 50 * relative_pos_y / (self.target_cords[3][1] - self.target_cords[0][1])
             coordinate_res = [actual_pos_x, actual_pos_y]
-            print(coordinate_res)
+            # print(coordinate_res)
             return coordinate_res
         else:
             return dotpos
