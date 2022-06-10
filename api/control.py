@@ -383,7 +383,7 @@ if __name__ == '__main__':
     # 定点移动
     for ct in range(2):
         for i, ele in enumerate(locations):
-            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.4)
+            clt.smoothMoveToDist(locations[i - 1], ele, accuracy=0.8)
             time.sleep(0.3)
 
     # 结束测试（安全退出）
