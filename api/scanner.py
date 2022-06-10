@@ -330,12 +330,12 @@ class Scanner:
 
                     if (shaperate_H * np.pi * size[0] * size[1] / 4) > area > (
                             shaperate_L * np.pi * size[0] * size[1] / 4):
-                        fixed_pos = self.cvtCdt(pos)
-                        fixed_centers.append((fixed_pos[0] - 25, fixed_pos[1] - 25))
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
                         if self.roi is not None:
                             pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
                                           pos[1] + self.roi[1] - self.cap.frame_size[1] / 2]
+                            fixed_pos = self.cvtCdt(pos_newsys)
+                            fixed_centers.append((fixed_pos[0] - 25, fixed_pos[1] - 25))
                         else:
                             pos_newsys = [pos[0] - self.cap.frame_size[0] / 2,
                                           pos[1] - self.cap.frame_size[1] / 2]
@@ -379,7 +379,9 @@ class Scanner:
             # cv2.circle(frame, (x + w // 2, y + h // 2), 2, (0, 255, 0), 3)
             center_roi = [x + w / 2, y + h / 2]
             if self.roi is not None:
-                center_roi = self.cvtCdt(center_roi)
+                center = [self.roi[0] + center_roi[0] - self.cap.frame_size[0] / 2,
+                          self.roi[1] + center_roi[1] - self.cap.frame_size[1] / 2]
+                center_roi = self.cvtCdt(center)
                 center = (center_roi[0] - 25,
                           center_roi[1] - 25)
             else:
