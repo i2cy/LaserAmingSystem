@@ -114,7 +114,7 @@ class Control:
             if not y_mea:
                 x_mea = (x_lpf - x_dlpf) + x_lpf
 
-            # y_mea = -y_mea  # 将y轴反转
+            y_mea = -y_mea  # 将y轴反转
 
             x_lpf += self.x_filter * (x_mea - x_lpf)
             x_dlpf += self.x_filter * (x_lpf - x_dlpf)
@@ -315,7 +315,7 @@ if __name__ == '__main__':
         tags, t = sc.scanTags()
         tag_loc = []
         for ele in t:
-            tag_loc.append((ele[0], ele[1]))
+            tag_loc.append((ele[0], -ele[1]))
         print("tags scanned:\n{}".format(tag_loc))
     except Exception as err:
         print("failed to read tags,", err)
