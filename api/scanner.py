@@ -409,7 +409,7 @@ class Scanner:
         magnification = (self.target_cords_LU[3][1] - self.target_cords_LU[0][1]) / \
                         (self.target_cords_LU[3][0] - self.target_cords_LU[0][0])
         px_y = ((self.target_cords_LU[2][0] - self.target_cords_LU[3][0]) / 50) * \
-               (self.target_cords_LU[3][1] actPos[1]) / magnification
+               (self.target_cords_LU[3][1] - actPos[1]) / magnification
         px_x = (px_y / magnification) + \
                (self.target_cords_LU[2][0] - self.target_cords_LU[3][0] - 2 * px_y / magnification) * actPos[0] / 50
         roi_x = int(px_x) + self.target_cords_LU[3][0]
