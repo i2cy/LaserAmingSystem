@@ -123,6 +123,7 @@ class Scanner:
         self.roi = None
         self.target_cords = None
         self.iso = 40
+        self.act_laser_pos = []
 
     def readFrame(self):
         """
@@ -325,11 +326,10 @@ class Scanner:
                     # cv2.circle(img,(x+w//2,y+h//2),2,(0,0,255),3)
                     # print(area/(w*h))
                     # if (0.6 * w * h <= area) & (0.87 * w * h >= area):  # 判定是否为圆 method_1
-
                     print("ellipse: {:.4f}".format(area / (np.pi * size[0] * size[1] / 4)))
 
-                    if (shaperate_H * np.pi * size[0] * size[1] / 4) > area \
-                            > (shaperate_L * np.pi * size[0] * size[1] / 4):
+                    if (shaperate_H * np.pi * size[0] * size[1] / 4) > area > (shaperate_L * np.pi * size[0] * size[1] / 4):
+                        self.cvtCdt(pos)
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
                         if self.roi is not None:
                             pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
@@ -385,6 +385,11 @@ class Scanner:
             return center
 
     def cvtCdt(self, dotpos):
+
+        """
+
+            func: Enter the roi coordinates, return the corrected target coordinates, and add them to self.act_laser_pos
+        """
         if self.roi is not None:
             magnification = (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[3][0] - self.targrt_cords_LU[0][0])
             relative_length = (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0]) - dotpos[1] / magnification
@@ -393,10 +398,16 @@ class Scanner:
             relative_pos_y = 50 * dotpos[1] / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
             actual_pos_y = relative_pos_y * (self.targrt_cords_LU[3][1] - self.targrt_cords_LU[0][1]) / (self.targrt_cords_LU[2][0] - self.targrt_cords_LU[3][0])
             coordinate_res = [actual_pos_x, actual_pos_y]
-            self.act_laser_pos = coordinate_res
+            self.act_laser_pos.append[coordinate_res]
             return coordinate_res
         else:
             return dotpos
+
+    @staticmethod()
+    def cvtCdt_ROI2Center(ROIpos):
+        x = ROIpos[0] - 25
+        y = (50 - ROIpos[1]) - 25
+        return [x, y]
 
     def pnpSolve(self):
         if self.roi is None:
@@ -426,6 +437,7 @@ class Scanner:
         print("sita_z is  ", sita_z)
 
         return sita_y
+    
 
 
 if __name__ == "__main__":
