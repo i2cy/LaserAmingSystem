@@ -21,7 +21,8 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-P, I, D = (1.24, 0, 0.14)  # initial tuned values
+XP, XI, XD = (1.32, 0, 0.10)
+YP, YI, YD = (1.13, 0, 0.10)
 
 
 class Control:
@@ -142,22 +143,22 @@ class Control:
     def isStable(self, err_max=1):
         return ctrl.pidX.err < err_max and ctrl.pidY.err < err_max
 
-    def move(self, x, y, wait=True, timeout=0.0, err_max=1, stable_time=0.8):
+    def move(self, x, y, wait=True, timeout=0.0, err_max=2.0, stable_time=0.8):
         self.pidX.expectation = x
         self.pidY.expectation = y
         if wait:
-            cnt = 0
-            while self.isStable(err_max) and cnt < stable_time * 60:
-                cnt += 1
+            ctl_cnt = 0
+            while self.isStable(err_max) and ctl_cnt < stable_time * 20:
+                ctl_cnt += 1
                 time.sleep(0.05)
-            t0 = time.time()
-            cnt = 0
-            while cnt < stable_time * 20:
+            clt_t0 = time.time()
+            ctl_cnt = 0
+            while ctl_cnt < stable_time * 20:
                 if timeout:
-                    if time.time() - t0 > timeout:
+                    if time.time() - clt_t0 > timeout:
                         raise Exception("timeout")
                 if self.isStable(err_max):
-                    cnt += 1
+                    ctl_cnt += 1
                 time.sleep(0.05)
 
     def targetCenterofCam(self):
@@ -235,13 +236,13 @@ if __name__ == '__main__':
     clt.connect()
 
     # 初始化X方向PID控制器
-    pidx = LaserYawControl(clt, P, I, D)
+    pidx = LaserYawControl(clt, XP, XI, XD)
     pidx.out_limit = [-40, 40]
     pidx.death_area = 2
     pidx.integ_limit = [-10, 10]
 
     # 初始化Y方向PID控制器
-    pidy = LaserPitchControl(clt, P, I, D)
+    pidy = LaserPitchControl(clt, YP, YI, YD)
     pidy.out_limit = [-40, 40]
     pidy.death_area = 2
     pidy.integ_limit = [-10, 10]
@@ -328,18 +329,20 @@ if __name__ == '__main__':
     print("starting control and debuging")
     ctrl.start()
 
-    # 自动调节相机ISO
-    #print("auto tuning ISO...")
-    #sc.autoISO(exp=130, peek_thresh=1000, p=0.15, smooth_window=5)
-    #print("\ncurrent ISO: {}".format(sc.iso))
-    #time.sleep(1)
-
     # 启动XY方向PID控制器
     clt.moveToAng(*ang)
     center_loc = clt.getDist()
     time.sleep(2)
     pidx.start()
     pidy.start()
+
+    # 校准云台方向
+    try:
+        ctrl.move(0, 0, timeout=TIMEOUT, err_max=0.8)
+        clt.center = (clt.pitch, clt.yaw)
+        print("\nnew yaw center recorded: {:.2f}".format(clt.center[1]))
+    except (KeyboardInterrupt, Exception) as err:
+        print("exited: {}".format(err))
 
     # 移动到靶面中心点
     print("\n> moving to center spot")
@@ -408,7 +411,8 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, Exception) as err:
         print("test exited: {}".format(err))
 
-    # 关闭XY方向PID控制器
+    # 关闭XY方向PID控制器，停止日志，重置中心
+    ctrl.stopDebug()
     pidx.pause()
     pidy.pause()
     clt.moveToDist(*center_loc)
@@ -432,7 +436,10 @@ if __name__ == '__main__':
     clt.moveToDist(*center_loc)
     time.sleep(0.5)
     for i in range(3):
-        clt.smoothDrawCircle(center_loc, 7*(i+1), accuracy=2, delay=0.02)
+        clt.smoothDrawCircle(center_loc, 7*(i+1), accuracy=2, delay=0.007)
+        time.sleep(0.2)
+        clt.moveToDist(*center_loc)
+        time.sleep(0.2)
     time.sleep(0.5)
     clt.moveToDist(*center_loc)
     time.sleep(0.5)

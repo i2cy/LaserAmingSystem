@@ -166,7 +166,7 @@ class Scanner:
         # self.frame = frame[(self.roi[0]):(self.roi[2]), self.roi[1]:self.roi[3]]
         return self.frame
 
-    def autoISO(self, exp=130, dead_zone=15, p=0.1, window=11, skip=20,
+    def autoISO(self, exp=130, dead_zone=10, p=0.1, window=11, skip=20,
                 smooth_window=7, peek_thresh=900, verbose=True):
         """
             auto adjust camera ISO
