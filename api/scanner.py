@@ -213,7 +213,7 @@ class Scanner:
 
         return dif
 
-    def scanTargetSurface(self, thresh=15, area_H=20000, area_L=4000, validation_thresh=20):
+    def scanTargetSurface(self, thresh=15, area_H=15000, area_L=3000, validation_thresh=20):
         """
         Target surface detector
 
@@ -292,7 +292,7 @@ class Scanner:
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=2, shaperate_H=0.96, shaperate_L=0.54):
+    def scanTags(self, area_H=300, area_L=5, shaperate_H=0.96, shaperate_L=0.54):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags

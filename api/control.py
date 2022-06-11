@@ -21,8 +21,8 @@ else:
     from .scanner import Scanner, CameraPipe
 
 
-XP, XI, XD = (1.32, 0, 0.10)
-YP, YI, YD = (1.13, 0, 0.10)
+XP, XI, XD = (1.18, 0, 0.12)
+YP, YI, YD = (1.18, 0, 0.10)
 
 
 class Control:
@@ -237,14 +237,14 @@ if __name__ == '__main__':
 
     # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, XP, XI, XD)
-    pidx.out_limit = [-40, 40]
-    pidx.death_area = 2
+    pidx.out_limit = [-70, 70]
+    pidx.death_area = 1.7
     pidx.integ_limit = [-10, 10]
 
     # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, YP, YI, YD)
-    pidy.out_limit = [-40, 40]
-    pidy.death_area = 2
+    pidy.out_limit = [-70, 70]
+    pidy.death_area = 1.7
     pidy.integ_limit = [-10, 10]
 
     # 初始化摄像头采集管道
@@ -436,7 +436,7 @@ if __name__ == '__main__':
     clt.moveToDist(*center_loc)
     time.sleep(0.5)
     for i in range(3):
-        clt.smoothDrawCircle(center_loc, 7*(i+1), accuracy=2, delay=0.007)
+        clt.smoothDrawCircle(center_loc, 7*(i+1), accuracy=4, delay=0.005)
         time.sleep(0.2)
         clt.moveToDist(*center_loc)
         time.sleep(0.2)
