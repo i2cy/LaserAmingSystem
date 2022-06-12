@@ -21,7 +21,8 @@ class PTControl(HTSocket):
 
     def __init__(self, port, baud_rate, ctl_freq=50, center=(800, 5150), speed_dead_zone=(-20, 20),
                  pitch_range=(820, 5400), yaw_range=(3750, 6750),
-                 yaw_90=5000, pitch_90=4700, pitch_center=5180, distance_cm=100):
+                 yaw_90=5000, pitch_90=4700, pitch_center=5180, distance_cm=100,
+                 font_size=2):
         super(PTControl, self).__init__(port, baud_rate)
         self.__delay_perstep = 1 / ctl_freq
         self.dead_zone = speed_dead_zone
@@ -43,6 +44,8 @@ class PTControl(HTSocket):
         self.pitch_step = pitch_90 / 90
         self.pitch_center = pitch_center
         self.distance = distance_cm
+        self.line_buffer = {}  # {line: string}
+        self.font_size = font_size
 
         self.__ang_conv = 180 / np.pi
 
@@ -137,7 +140,7 @@ class PTControl(HTSocket):
         self.yaw = yaw
 
     def moveToDist(self, x=0, y=0):
-        theta = np.arccos(y / np.power(self.distance**2 + x**2 + y**2, 0.5)) * self.__ang_conv
+        theta = np.arccos(y / np.power(self.distance ** 2 + x ** 2 + y ** 2, 0.5)) * self.__ang_conv
         gamma = np.arctan(x / self.distance) * self.__ang_conv
         self.moveToAng(theta, gamma)
 
@@ -154,7 +157,7 @@ class PTControl(HTSocket):
         self.speed_yaw = speed_yaw
 
     def smoothMoveToDist(self, start, to, accuracy=1, delay=0.02):
-        distance = np.power((start[0] - to[0])**2 + (start[0] - to[0])**2, 0.5)
+        distance = np.power((start[0] - to[0]) ** 2 + (start[0] - to[0]) ** 2, 0.5)
         dots = int(distance * accuracy) + 1
         x = np.linspace(start[0], to[0], dots)
         y = np.linspace(start[1], to[1], dots)
@@ -175,6 +178,29 @@ class PTControl(HTSocket):
         for i, xi in enumerate(x):
             self.moveToDist(xi, y[i])
             time.sleep(delay)
+
+    def clearLine(self, line=None):
+        if line is not None:
+            if line in self.line_buffer.keys():
+                self.printLine(" " * len(self.line_buffer[line]), line, False)
+                time.sleep(0.05)
+        else:
+            if self.line_buffer:
+                for line_num in list(self.line_buffer.keys())[:]:
+                    self.printLine(" " * len(self.line_buffer[line_num]), line_num, False)
+                self.line_buffer = {}
+            else:
+                self.send(b"\xcc\x22", b"\x01")
+
+    def printLine(self, string, line, clear=True):
+        if clear:
+            self.clearLine(line)
+        self.line_buffer.update({line: string})
+        line -= 1
+        line *= self.font_size
+        payload = b"\x02" + bytes((0, line, self.font_size)) + string.encode("utf-8")
+        self.send(b"\xcc\x22", payload)
+        time.sleep(0.05)
 
 
 def move(clt, pitch, yaw):

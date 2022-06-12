@@ -226,7 +226,7 @@ if __name__ == '__main__':
     os.system("sudo chmod 777 /dev/ttyS4")
 
     # 初始化HT云台控制接口
-    clt = PTControl("/dev/ttyS4", 115200)
+    clt = PTControl("/dev/ttyS4", 115200, font_size=2)
     clt.moveToAng(70, 0)
     ang = clt.getAng()
     clt.moveToAng(0, 0)
@@ -235,28 +235,39 @@ if __name__ == '__main__':
     # 启动HT云台控制
     clt.connect()
 
+    # 显示初始化信息
+    clt.clearLine()
+    clt.printLine("Init...", 1)
+
     # 初始化X方向PID控制器
     pidx = LaserYawControl(clt, XP, XI, XD)
     pidx.out_limit = [-70, 70]
     pidx.death_area = 1.7
     pidx.integ_limit = [-10, 10]
+    clt.printLine("Init:", 1)
+    clt.printLine("PID X", 2)
 
     # 初始化Y方向PID控制器
     pidy = LaserPitchControl(clt, YP, YI, YD)
     pidy.out_limit = [-70, 70]
     pidy.death_area = 1.7
     pidy.integ_limit = [-10, 10]
+    clt.printLine("PID Y", 2)
 
     # 初始化摄像头采集管道
     cap = CameraPipe((0,), (320, 240), analogue_gain=16, exposure=1660)
     cap.start()
     sc = Scanner(cap)
+    clt.printLine("Cam Pipe", 2)
 
     # 初始化激光坐标控制系统
     ctrl = Control(pidx, pidy, sc, x_filter=0.4, y_filter=0.4, laser_args=(1, 60, 220))
+    clt.printLine("Aim Sys", 2)
 
     # 等待摄像头采集管道就绪
     print("waiting for camera pipe line to be ready...")
+    clt.printLine("Wait for:", 1)
+    clt.printLine("Cam Pipe", 2)
     fps = cap.getFPS()
     cnt = 0
     while fps < 10 and cnt < 6:
@@ -269,19 +280,23 @@ if __name__ == '__main__':
 
     # 使用rkisp让相机自动曝光一次
     print("reinitializing camera arguments with gst-launcher")
+    clt.printLine("RkISP RST", 2)
     os.system("gst-camera.sh >/dev/null 2>/dev/null")
     time.sleep(3)
     os.system("stop-gst-camera.sh >/dev/null 2>/dev/null")
 
     # 将相机ISO调至最低
+    clt.printLine("Auto ISO", 2)
     cap.setCamArgs(analogue_gain=16)
     time.sleep(1)
 
     # 自动调节相机ISO
     print("auto tuning ISO...")
-    sc.autoISO(exp=140, peek_thresh=1000, p=0.15, smooth_window=5)
+    sc.autoISO(exp=140, peek_thresh=1000, p=0.15, smooth_window=5, verbose=False)
     print("\ncurrent ISO: {}".format(sc.iso))
+    clt.printLine("ISO: {:1f}".format(sc.iso), 3)
     time.sleep(1)
+    clt.clearLine(3)
 
     # 预览图象
     while sc.frame is None:
@@ -292,6 +307,8 @@ if __name__ == '__main__':
     plt.close(1)
 
     # 扫描标靶获得ROI
+    clt.printLine("Scanning:", 1)
+    clt.printLine("Target", 2)
     print("scanning target surface")
     while sc.roi is None:
         try:
@@ -299,6 +316,8 @@ if __name__ == '__main__':
             sc.scanTargetSurface()
         except KeyboardInterrupt:
             break
+    if sc.roi is not None:
+        clt.printLine("ROI: {}x{}".format(sc.roi[2] - sc.roi[0], sc.roi[3] - sc.roi[1]), 3)
     print("ROI:", sc.roi)
 
     # 预览ROI
@@ -311,6 +330,8 @@ if __name__ == '__main__':
         plt.close(1)
 
     # 扫描标记
+    clt.printLine("Scanning:", 1)
+    clt.printLine("Tags", 2)
     tags = []
     try:
         sc.readROI()
@@ -322,10 +343,13 @@ if __name__ == '__main__':
             loc = sc.cvtCdt(ele)
             tag_loc.append((loc[0], -loc[1]))
         print("tags scanned:\n{}".format(tag_loc))
+        clt.printLine("Tag found: {}".format(len(tag_loc)), 4)
     except Exception as err:
         print("failed to read tags,", err)
 
     # 启动激光坐标控制系统
+    clt.printLine("Starting:", 1)
+    clt.printLine("Aim CTL", 2)
     print("starting control and debuging")
     ctrl.start()
 
@@ -337,6 +361,8 @@ if __name__ == '__main__':
     pidy.start()
 
     # 校准云台方向
+    clt.printLine("Cali:", 1)
+    clt.printLine("PT Center", 2)
     try:
         ctrl.move(0, 0, timeout=TIMEOUT, err_max=0.8)
         clt.center = (clt.pitch, clt.yaw)
@@ -345,11 +371,15 @@ if __name__ == '__main__':
         print("exited: {}".format(err))
 
     # 移动到靶面中心点
+    clt.printLine("Moving:", 1)
+    clt.printLine("Cam Center", 2)
     print("\n> moving to center spot")
     try:
         x, y = sc.getTargetCenter()
         print("center point: ({:.2f}, {:.2f})".format(float(x), float(y)))
         ctrl.move(x, -y, timeout=TIMEOUT)
+        clt.printLine("Wait for:", 1)
+        clt.printLine("ENTER signal", 2)
         input("\npress ENTER to continue\n")
         center = (x, -y)
         center_loc = clt.getDist()
@@ -445,6 +475,7 @@ if __name__ == '__main__':
     time.sleep(0.5)
 
     # 结束测试（安全退出）
+    clt.clearLine()
     ctrl.stopDebug()
     ctrl.stop()
     pidx.pause()
