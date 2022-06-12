@@ -167,7 +167,7 @@ class Scanner:
         return self.frame
 
     def autoISO(self, exp=130, dead_zone=10, p=0.1, window=11, skip=20,
-                smooth_window=7, peek_thresh=900, verbose=True):
+                smooth_window=7, peek_thresh=900, verbose=True, top_crop=30):
         """
             auto adjust camera ISO
             return: int     error
@@ -189,7 +189,7 @@ class Scanner:
         while True:
             self.readFrame()
             isoarea = self.frame[
-                      self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, 0: self.cap.frame_size[1]]
+                      self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, top_crop: self.cap.frame_size[1]]
             gray = cv2.cvtColor(isoarea, cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (smooth_window, smooth_window), 0)
             smoothed, bins = np.histogram(gray.ravel(), 256, [0, 256])
@@ -292,20 +292,26 @@ class Scanner:
                         break
         return shapepoint
 
-    def scanTags(self, area_H=300, area_L=5, shaperate_H=0.96, shaperate_L=0.54):
+    def scanTags(self, thresh=40, area_H=400, area_L=5, shaperate_H=0.96, shaperate_L=0.54, inner=-10):
         """
             para : area_h, area_L, shaprate_H, shaperate_L
             func : muilty scan tags
         """
 
+        offset = inner
+
         if self.roi is None:
             self.readFrame()
         else:
-            self.readROI()
+            self.readROI(offset=offset)
 
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # 灰度
+        # flag, bina = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
+        plt.cla()
+        plt.imshow(edged)
+        plt.pause(2)
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
         centers = []
@@ -330,15 +336,15 @@ class Scanner:
                             > (shaperate_L * np.pi * size[0] * size[1] / 4):
                         cv2.circle(self.frame, tuple([int(ele) for ele in pos]), 2, (0, 0, 255), 3)
                         if self.roi is not None:
-                            pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2,
-                                          pos[1] + self.roi[1] - self.cap.frame_size[1] / 2]
+                            pos_newsys = [pos[0] + self.roi[0] - self.cap.frame_size[0] / 2 - offset,
+                                          pos[1] + self.roi[1] - self.cap.frame_size[1] / 2 - offset]
                         else:
                             pos_newsys = [pos[0] - self.cap.frame_size[0] / 2,
                                           pos[1] - self.cap.frame_size[1] / 2]
                         centers.append(pos_newsys)
         return centers
 
-    def scanLaser(self, area_L=1, area_H=40, thresh=210):
+    def scanLaser(self, area_L=1, area_H=40, thresh=160):
         """
         Laser beam coordinate detector
 

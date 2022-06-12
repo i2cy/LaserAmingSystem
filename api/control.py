@@ -112,10 +112,10 @@ class Control:
             if not x_mea:
                 x_mea = (x_lpf - x_dlpf) + x_lpf
 
-            if not y_mea:
-                x_mea = (x_lpf - x_dlpf) + x_lpf
-
             y_mea = -y_mea
+
+            if not y_mea:
+                y_mea = (y_lpf - y_dlpf) + y_lpf
 
             x_lpf += self.x_filter * (x_mea - x_lpf)
             x_dlpf += self.x_filter * (x_lpf - x_dlpf)
@@ -288,11 +288,11 @@ if __name__ == '__main__':
     # 将相机ISO调至最低
     clt.printLine("Auto ISO", 2)
     cap.setCamArgs(analogue_gain=16)
-    time.sleep(1)
+    time.sleep(2)
 
     # 自动调节相机ISO
     print("auto tuning ISO...")
-    sc.autoISO(exp=140, peek_thresh=1000, p=0.15, smooth_window=5, verbose=False)
+    sc.autoISO(exp=120, peek_thresh=1000, p=0.07, smooth_window=7, verbose=False, top_crop=50)
     print("\ncurrent ISO: {}".format(sc.iso))
     clt.printLine("ISO: {:1f}".format(sc.iso), 3)
     time.sleep(1)
