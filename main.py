@@ -19,8 +19,8 @@ KEY3 = 36
 
 FONT_SIZE = 2
 
-XP, XI, XD = (0.87, 0, 0.12)
-YP, YI, YD = (0.87, 0, 0.10)
+XP, XI, XD = (0.92, 0, 0.12)
+YP, YI, YD = (0.92, 0, 0.10)
 
 PID_OUT_LIMIT = [-70, 70]
 PID_DEATH_AREA = 1.7
@@ -37,6 +37,7 @@ TARGET_CENTER = None
 CAM_CENTER = None
 TAGS = None
 TIMEOUT = 10
+MENU_INDEX = 0
 
 
 def twoDotsTest(controller):
@@ -52,7 +53,7 @@ def compareDist(p1, p2, thresh=6):
 
 
 def menu(controller):
-    global TARGET_CENTER, CAM_CENTER, TAGS
+    global TARGET_CENTER, CAM_CENTER, TAGS, MENU_INDEX
     
     assert isinstance(controller, Control)
     ctrl = controller
@@ -62,15 +63,26 @@ def menu(controller):
     pidx = ctrl.pidX
     pidy = ctrl.pidY
 
-    menu_num = 0
-
     # 将激光点移动到靶面中心
-    time.sleep(1)
     xa, ya = sc.getTargetCenter()
     ctrl.move(xa, -ya, wait=False)
 
     clt.printLine("[Menu]", 1)
-    clt.printLine("1. Scan ROI", 2)
+    if MENU_INDEX == 0:
+        clt.printLine("1. Scan ROI", 2)
+    elif MENU_INDEX == 1:
+        clt.printLine("2. Scan Tags", 2)
+    elif MENU_INDEX == 2:
+        clt.printLine("3. Reinit", 2)
+    elif MENU_INDEX == 3:
+        clt.printLine("4. 2 Tag Move", 2)
+    elif MENU_INDEX == 4:
+        clt.printLine("5. 3 Tag Move", 2)
+    elif MENU_INDEX == 5:
+        clt.printLine("6. Draw Circle", 2)
+    else:
+        MENU_INDEX = 0
+        clt.printLine("1. Scan ROI", 2)
 
     # print(gpioRead(KEY1), gpioRead(KEY2), gpioRead(KEY3))
 
@@ -79,27 +91,27 @@ def menu(controller):
         # print(gpioRead(KEY1), gpioRead(KEY2), gpioRead(KEY3))
         if gpioRead(KEY3):
             waitKeyRelease(KEY3)
-            menu_num += 1
-            if menu_num == 0:
+            MENU_INDEX += 1
+            if MENU_INDEX == 0:
                 clt.printLine("1. Scan ROI", 2)
-            elif menu_num == 1:
+            elif MENU_INDEX == 1:
                 clt.printLine("2. Scan Tags", 2)
-            elif menu_num == 2:
+            elif MENU_INDEX == 2:
                 clt.printLine("3. Reinit", 2)
-            elif menu_num == 3:
+            elif MENU_INDEX == 3:
                 clt.printLine("4. 2 Tag Move", 2)
-            elif menu_num == 4:
+            elif MENU_INDEX == 4:
                 clt.printLine("5. 3 Tag Move", 2)
-            elif menu_num == 5:
+            elif MENU_INDEX == 5:
                 clt.printLine("6. Draw Circle", 2)
             else:
-                menu_num = 0
+                MENU_INDEX = 0
                 clt.printLine("1. Scan ROI", 2)
         time.sleep(0.001)
 
     waitKeyRelease(KEY2)
 
-    if menu_num == 0:
+    if MENU_INDEX == 0:
         # 扫描标靶获得ROI
         sc.roi = None
         clt.printLine("[Scan ROI]", 1)
@@ -115,9 +127,9 @@ def menu(controller):
             clt.printLine("ROI: {}x{}".format(sc.roi[2] - sc.roi[0], sc.roi[3] - sc.roi[1]), 3)
         print("ROI:", sc.roi)
     
-    elif menu_num == 1:
+    elif MENU_INDEX == 1:
         # 扫描标记
-        clt.moveToAng(0)
+        clt.moveToAng(10)
         clt.printLine("[Scan Tag]", 1)
         clt.printLine("Tags", 2)
         time.sleep(0.5)
@@ -135,8 +147,9 @@ def menu(controller):
             clt.printLine("Tag found: {}".format(len(tag_loc)), 3)
         except Exception as err:
             print("failed to read TAGS,", err)
+        clt.moveToDist(*TARGET_CENTER)
     
-    elif menu_num == 2:  # 重新初始化
+    elif MENU_INDEX == 2:  # 重新初始化
         # 扫描标靶获得ROI
         sc.roi = None
         clt.printLine("[Scan ROI]", 1)
@@ -188,7 +201,7 @@ def menu(controller):
             print("exited: {}".format(err))
             clt.moveToDist(*TARGET_CENTER)
         
-    elif menu_num == 3:  # 两点测试
+    elif MENU_INDEX == 3:  # 两点测试
         # 扫描标记
         locations = []
 
@@ -222,7 +235,7 @@ def menu(controller):
 
         if len(TAGS) >= 1:
             print("\n> moving to spot ({:.1f}, {:.1f})".format(*TAGS[0]))
-            ctrl.move(*TAGS[0], timeout=TIMEOUT, stable_time=1.2)
+            ctrl.move(*TAGS[0], timeout=TIMEOUT, stable_time=1)
             locations.append(clt.getDist())
 
         if len(TAGS) > 1:
@@ -235,11 +248,17 @@ def menu(controller):
             ctrl.move(*TAGS[2], timeout=TIMEOUT)
             locations.append(clt.getDist())
 
+        if len(TAGS) >= 1:
+            print("\n> moving to spot ({:.1f}, {:.1f})".format(*TAGS[0]))
+            ctrl.move(*TAGS[0], timeout=TIMEOUT)
+
         clt.printLine("[Tag Location]", 1)
         for i, (x, y) in enumerate(locations):
             clt.printLine(">{} ({:.1f}, {:.1f})".format(i + 1, - x + TARGET_CENTER[0], y - TARGET_CENTER[1]), i + 3)
 
-    elif menu_num == 4:  # 三点测试
+        return
+
+    elif MENU_INDEX == 4:  # 三点测试
         # 扫描标记
         locations = []
 
@@ -276,7 +295,7 @@ def menu(controller):
 
         if len(TAGS) >= 1:
             print("\n> moving to spot ({:.1f}, {:.1f})".format(*TAGS[0]))
-            ctrl.move(*TAGS[0], timeout=TIMEOUT, stable_time=1.2)
+            ctrl.move(*TAGS[0], timeout=TIMEOUT, stable_time=1)
             locations.append(clt.getDist())
 
         if len(TAGS) > 1:
@@ -289,11 +308,60 @@ def menu(controller):
             ctrl.move(*TAGS[2], timeout=TIMEOUT)
             locations.append(clt.getDist())
 
+        if len(TAGS) >= 1:
+            print("\n> moving to spot ({:.1f}, {:.1f})".format(*TAGS[0]))
+            ctrl.move(*TAGS[0], timeout=TIMEOUT)
+
         clt.printLine("[Tag Location]", 1)
         for i, (x, y) in enumerate(locations):
             clt.printLine(">{} ({:.1f}, {:.1f})".format(i + 1, - x + TARGET_CENTER[0], y - TARGET_CENTER[1]), i + 2)
 
-    time.sleep(2)
+        return
+
+    elif MENU_INDEX == 5:  # 绘制圆形
+        # 键入数据， K3 +, K1 -, K2 确认
+        radius = 7
+        clt.printLine("[Draw Circle]", 1)
+        clt.printLine("R: {}cm".format(radius), 2)
+        clt.printLine("K3+ K1- K2Y", 3)
+
+        while not gpioRead(KEY2):
+            # print(gpioRead(KEY1), gpioRead(KEY2), gpioRead(KEY3))
+            if gpioRead(KEY3):
+                waitKeyRelease(KEY3)
+                if radius < 25:
+                    radius += 1
+                clt.printLine("R: {}cm".format(radius), 2)
+            elif gpioRead(KEY1):
+                waitKeyRelease(KEY1)
+                if radius > 1:
+                    radius -= 1
+                clt.printLine("R: {}cm".format(radius), 2)
+
+            time.sleep(0.001)
+
+        waitKeyRelease(KEY2)
+
+        clt.printLine("Drawing", 3)
+        time.sleep(1)
+
+        pidx.pause()
+        pidy.pause()
+        pidx.reset(XP, XI, XD)
+        pidy.reset(YP, YI, YD)
+        clt.moveToDist(*TARGET_CENTER)
+        time.sleep(0.5)
+
+        clt.smoothDrawCircle(TARGET_CENTER, radius, accuracy=4, delay=0.005)
+        time.sleep(0.5)
+        clt.moveToDist(*TARGET_CENTER)
+        time.sleep(0.5)
+
+        pidx.start()
+        pidy.start()
+        return
+
+    time.sleep(1)
 
 def main():
     global TARGET_CENTER, CAM_CENTER

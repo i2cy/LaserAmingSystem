@@ -364,7 +364,7 @@ if __name__ == '__main__':
     clt.printLine("Cali:", 1)
     clt.printLine("PT Center", 2)
     try:
-        ctrl.move(0, 0, timeout=TIMEOUT, err_max=0.8)
+        ctrl.move(0, 0, timeout=TIMEOUT, err_max=0.6)
         clt.center = (clt.pitch, clt.yaw)
         print("\nnew yaw center recorded: {:.2f}".format(clt.center[1]))
     except (KeyboardInterrupt, Exception) as err:
