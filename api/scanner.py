@@ -194,10 +194,10 @@ class Scanner:
             gray = cv2.GaussianBlur(gray, (smooth_window, smooth_window), 0)
             smoothed, bins = np.histogram(gray.ravel(), 256, [0, 256])
 
-            plt.cla()
+            # plt.cla()
 
-            plt.plot(smoothed)
-            plt.pause(0.1)
+            # plt.plot(smoothed)
+            # plt.pause(0.1)
             dif = exp - findPeak(smoothed)
 
             if verbose:
@@ -209,7 +209,7 @@ class Scanner:
                 add_num = dif * p
                 setISO_add(add_num)
 
-        plt.close(1)
+        # plt.close(1)
 
         return dif
 
@@ -233,9 +233,9 @@ class Scanner:
 
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
 
-        plt.cla()
-        plt.imshow(blurred)
-        plt.pause(2)
+        # plt.cla()
+        # plt.imshow(blurred)
+        # plt.pause(2)
 
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
@@ -309,9 +309,9 @@ class Scanner:
         # flag, bina = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
         blurred = cv2.bilateralFilter(gray, 2, 200, 200)  # 双边滤波降噪
         edged = cv2.Canny(blurred, 25, 200)  # 边缘识别
-        plt.cla()
-        plt.imshow(edged)
-        plt.pause(2)
+        # plt.cla()
+        # plt.imshow(edged)
+        # plt.pause(2)
         # edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))  # 膨胀连接边缘
         contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 寻找轮廓
         centers = []
