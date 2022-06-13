@@ -213,7 +213,7 @@ class Scanner:
 
         return dif
 
-    def scanTargetSurface(self, thresh=15, area_H=15000, area_L=3000, validation_thresh=20):
+    def scanTargetSurface(self, thresh=15, area_H=15000, area_L=8000, validation_thresh=20):
         """
         Target surface detector
 
@@ -245,7 +245,7 @@ class Scanner:
         shapepoint = None
         if len(contours) > 0:
             # 按轮廓面积降序排列
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)
+            contours = sorted(contours, key=cv2.contourArea, reverse=False)
             for c in contours:
                 # 近似轮廓
                 if area_H > cv2.contourArea(c) > area_L:
