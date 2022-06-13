@@ -140,8 +140,8 @@ class Control:
                 time.sleep(delay)
             self.__current_core_time = time.time() - ctl_t0
 
-    def isStable(self, err_max=1):
-        return ctrl.pidX.err < err_max and ctrl.pidY.err < err_max
+    def isStable(self, err_max=1.0):
+        return self.pidX.err < err_max and self.pidY.err < err_max
 
     def move(self, x, y, wait=True, timeout=0.0, err_max=2.0, stable_time=0.8):
         self.pidX.expectation = x
@@ -323,7 +323,7 @@ if __name__ == '__main__':
     # 预览ROI
     time.sleep(0.5)
     if sc.roi is not None:
-        sc.readROI(offset=10)
+        sc.readROI()
         plt.cla()
         plt.imshow(sc.frame)
         plt.pause(2)

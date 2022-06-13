@@ -72,7 +72,7 @@ class CameraPipe:
             if analogue_gain is not None:
                 os.system("sudo v4l2-ctl -c analogue_gain={} -d /dev/video{}".format(
                     analogue_gain, self.__video_args[0]))
-            print("ISO:", analogue_gain)
+            # print("ISO:", analogue_gain)
 
     def getFrame(self):
         return self.__frame_buff
@@ -187,6 +187,7 @@ class Scanner:
             self.iso = self.iso + add_num
 
         while True:
+            time.sleep(0.1)
             self.readFrame()
             isoarea = self.frame[
                       self.cap.frame_size[0] // 4: 3 * self.cap.frame_size[0] // 4, top_crop: self.cap.frame_size[1]]
